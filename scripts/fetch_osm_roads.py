@@ -34,12 +34,36 @@ ROAD_FILTER = '["highway"~"motorway|trunk|primary|secondary|motorway_link|trunk_
 SPEEDS = {"motorway": 80, "trunk": 60, "primary": 50, "secondary": 40}
 
 
+# Public Overpass servers, tried in order. The main one is often busy or
+# blocked on campus networks; the mirrors serve the same data.
+OVERPASS_SERVERS = [
+    "https://overpass-api.de/api",
+    "https://overpass.kumi.systems/api",
+    "https://overpass.private.coffee/api",
+    "https://maps.mail.ru/osm/tools/overpass/api",
+]
+
+
+def download_graph():
+    ox.settings.requests_timeout = 300
+    last_error = None
+    for server in OVERPASS_SERVERS:
+        ox.settings.overpass_url = server
+        print("Trying", server)
+        try:
+            return ox.graph_from_place("Kerala, India", custom_filter=ROAD_FILTER, simplify=True)
+        except Exception as e:  # timeouts, connection errors, server busy
+            print(f"  failed: {type(e).__name__}: {str(e)[:150]}")
+            last_error = e
+    raise SystemExit(f"All Overpass servers failed. Last error: {last_error}")
+
+
 def load_graph():
     if GRAPH_FILE.exists():
         print("Loading cached graph:", GRAPH_FILE)
         return ox.load_graphml(GRAPH_FILE)
     print("Downloading Kerala major roads from OpenStreetMap (a few minutes)...")
-    G = ox.graph_from_place("Kerala, India", custom_filter=ROAD_FILTER, simplify=True)
+    G = download_graph()
     G = ox.add_edge_speeds(G, hwy_speeds=SPEEDS)
     G = ox.add_edge_travel_times(G)
     ox.save_graphml(G, GRAPH_FILE)
