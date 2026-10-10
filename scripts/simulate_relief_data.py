@@ -26,22 +26,22 @@ ROOT = Path(__file__).resolve().parent.parent
 PROCESSED = ROOT / "data" / "processed"
 OUT = ROOT / "data" / "simulated"
 
-# Approximate district headquarters (lat, lon).
+# District headquarters (lat, lon) from data/raw/boundaries/KERALA_DISTRICT_HQ.dbf.
 DISTRICT_HQ = {
-    "Alappuzha": (9.4981, 76.3388),
-    "Ernakulam": (9.9816, 76.2999),
-    "Idukki": (9.8497, 76.9681),
-    "Kannur": (11.8745, 75.3704),
-    "Kasaragod": (12.4996, 74.9869),
-    "Kollam": (8.8932, 76.6141),
-    "Kottayam": (9.5916, 76.5222),
-    "Kozhikode": (11.2588, 75.7804),
-    "Malappuram": (11.0510, 76.0711),
-    "Palakkad": (10.7867, 76.6548),
-    "Pathanamthitta": (9.2648, 76.7870),
-    "Thiruvananthapuram": (8.5241, 76.9366),
-    "Thrissur": (10.5276, 76.2144),
-    "Wayanad": (11.6085, 76.0830),
+    "Alappuzha": (9.4969, 76.3272),
+    "Ernakulam": (10.0198, 76.3444),
+    "Idukki": (9.8571, 76.9475),
+    "Kannur": (11.8710, 75.3759),
+    "Kasaragod": (12.5052, 74.9889),
+    "Kollam": (8.8898, 76.5756),
+    "Kottayam": (9.5890, 76.5264),
+    "Kozhikode": (11.2452, 75.7837),
+    "Malappuram": (11.0483, 76.0749),
+    "Palakkad": (10.7777, 76.6556),
+    "Pathanamthitta": (9.2640, 76.7884),
+    "Thiruvananthapuram": (8.4906, 76.9484),
+    "Thrissur": (10.5166, 76.2124),
+    "Wayanad": (11.6131, 76.0818),
 }
 
 RESOURCES = ["food_kits", "water_litres", "medicine_kits", "rescue_teams"]
