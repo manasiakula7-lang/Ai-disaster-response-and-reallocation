@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.ipynb_checkpoints/
+node_modules/
+dist/
+build/
+# large raw data
+data/raw/**/*.tif
+data/raw/**/*.pbf
+data/raw/**/*.pdf
+*.pt
+*.pth
