@@ -1,0 +1,5 @@
+policy,fulfilment,fulfil_food_kits,fulfil_water_litres,fulfil_medicine_kits,fulfil_rescue_teams,vuln_weighted_fulfilment,worst_district_fulfilment,gini,avg_delay_hr,neglect_district_days
+Local-first (nearest centre),0.6298,0.6503,0.6088,0.4953,0.7647,0.7579,0.3832,0.1231,2.1565,2
+Greedy by severity,0.6435,0.6135,0.6155,0.5803,0.7647,0.515,0.12,0.2654,6.4066,0
+LP: max coverage (OR-Tools),0.678,0.6593,0.5848,0.7034,0.7647,0.6851,0.5092,0.0616,2.3224,2
+LP: fairness-aware (OR-Tools),0.6779,0.6593,0.5844,0.7034,0.7647,0.7303,0.4811,0.0803,3.8149,2
