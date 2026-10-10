@@ -10,3 +10,5 @@ osmnx
 networkx
 scikit-learn
 joblib
+torch
+torch_geometric
