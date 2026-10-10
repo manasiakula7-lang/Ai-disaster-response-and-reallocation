@@ -114,3 +114,11 @@ Step 6 and 9 are joint.
 - **Ground-truth severity labels** are not in the data; the labelling rule must be stated.
 - **Scale:** 14 districts is small for a GAT; consider taluk-level nodes (~78 in Kerala) if boundaries are available.
 - **Simulated relief data:** results are only as credible as the simulator; document assumptions.
+
+## 7. Open data items (as of 2026-10-10)
+
+| Item | Needed by | Status |
+|---|---|---|
+| Real 2018 impact per district (relief-camp population, deaths, houses damaged; e.g. Kerala PDNA 2018) | Step 2 results (GAT validation) | Not collected; using severity derived from flood exposure until then |
+| IMD daily district rainfall, Aug 2018 | Optional, any time | Not collected |
+| Real OSM road distances | Before final demo | Deferred; straight-line × 1.35 estimate in `data/simulated/road_edges.csv`. Plan: offline reader for the local `.osm.pbf` |
