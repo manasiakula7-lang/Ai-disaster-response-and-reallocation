@@ -1,0 +1,10 @@
+pandas
+numpy
+geopandas
+rasterio
+shapely
+pdfplumber
+xlrd
+datasets
+osmnx
+networkx
