@@ -8,3 +8,5 @@ xlrd
 datasets
 osmnx
 networkx
+scikit-learn
+joblib
