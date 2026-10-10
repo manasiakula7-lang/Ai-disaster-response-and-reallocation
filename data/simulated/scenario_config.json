@@ -1,0 +1,88 @@
+{
+  "seed": 42,
+  "days": 7,
+  "severity_curve": [
+    0.3,
+    0.7,
+    1.0,
+    0.9,
+    0.6,
+    0.4,
+    0.25
+  ],
+  "exposure_column": "flood_exposure_100yr",
+  "displacement_rate": 0.15,
+  "per_person_per_day": {
+    "food_kits": 0.25,
+    "water_litres": 15.0,
+    "medicine_kits": 0.02
+  },
+  "people_per_rescue_team": 20000,
+  "demand_noise_sd": 0.1,
+  "stock_to_demand_ratio": 0.7,
+  "stock_placement": "population",
+  "road_factor": 1.35,
+  "avg_speed_kmph": 35.0,
+  "flooded_speed_factor": 0.5,
+  "max_daily_closure_prob": 0.45,
+  "reopen_prob": 0.35,
+  "large_district_population": 3000000,
+  "district_hq": {
+    "Alappuzha": [
+      9.4981,
+      76.3388
+    ],
+    "Ernakulam": [
+      9.9816,
+      76.2999
+    ],
+    "Idukki": [
+      9.8497,
+      76.9681
+    ],
+    "Kannur": [
+      11.8745,
+      75.3704
+    ],
+    "Kasaragod": [
+      12.4996,
+      74.9869
+    ],
+    "Kollam": [
+      8.8932,
+      76.6141
+    ],
+    "Kottayam": [
+      9.5916,
+      76.5222
+    ],
+    "Kozhikode": [
+      11.2588,
+      75.7804
+    ],
+    "Malappuram": [
+      11.051,
+      76.0711
+    ],
+    "Palakkad": [
+      10.7867,
+      76.6548
+    ],
+    "Pathanamthitta": [
+      9.2648,
+      76.787
+    ],
+    "Thiruvananthapuram": [
+      8.5241,
+      76.9366
+    ],
+    "Thrissur": [
+      10.5276,
+      76.2144
+    ],
+    "Wayanad": [
+      11.6085,
+      76.083
+    ]
+  }
+}
