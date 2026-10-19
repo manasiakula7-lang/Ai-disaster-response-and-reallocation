@@ -78,6 +78,7 @@ Each step ends in something runnable and demo-able, so the project is presentabl
 - Each centre trains its local model on its own slice of data; FedAvg over Flower in simulation mode on one laptop.
 - Compare centralised vs federated performance; that gap is the privacy cost to report.
 - Keep this scoped: it is a demonstration, not a production deployment.
+- **Done (2026-10-19):** `ml/fl/`. Flower 1.40 FedAvg over 19 simulated centres, each training only on its own decisions. Federated model: 65.8% fulfilment, worst district 71.8%, Gini 0.025 vs centralised 66.8% / 74.5% / 0.019 (50 unseen weeks). Independent per-centre models did 68.2% / 71.7% / 0.027, which points to personalised FL. See `ml/fl/README.md`.
 
 ### Step 6: Dynamic reallocation loop (Phase 6)
 - Event stream replays HumAID tweets in time order plus scripted road closures.

@@ -12,4 +12,5 @@ scikit-learn
 joblib
 torch
 torch_geometric
+flwr[simulation]
 ortools
