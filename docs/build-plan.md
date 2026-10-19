@@ -84,6 +84,7 @@ Each step ends in something runnable and demo-able, so the project is presentabl
 - Event stream replays HumAID tweets in time order plus scripted road closures.
 - On each event: update demand/stock/edges → re-run policy → emit new plan + alerts.
 - Scenario script: "Kerala Aug 2018, day 1-7" as the main demo.
+- **Done (2026-10-19):** `ml/realloc/`. 449 real tweets + 33 road events replayed in time order, 4 dispatch waves a day. Replanning lifts MAPPO from 60.5% to 62.7% fulfilment (worst district 63% to 67%) vs a fixed morning plan; almost all of the gain comes from the tweets. Writes `event_log.csv` and `plans.csv` for the dashboard. See `ml/realloc/README.md`.
 
 ### Step 7: Backend + database (Phase 7)
 - PostgreSQL + PostGIS: districts (geometry), centres, roads, stock, demand, allocations, event log.
