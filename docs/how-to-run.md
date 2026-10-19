@@ -111,7 +111,7 @@ npm run dev
 
 ### Browser
 
-Open **http://localhost:5173**. You should see the Kerala map with the day buttons.
+Open **http://localhost:5173**. You should see the Kerala map with a day timeline under it. A short help guide pops up the first time; click **Got it**.
 
 **To stop:** press `Ctrl + C` in each terminal.
 
@@ -119,10 +119,10 @@ Open **http://localhost:5173**. You should see the Kerala map with the day butto
 
 ## A 2-minute demo path
 
-1. **Overview:** click Day 1 → Day 3. The districts darken as the flood peaks (Alappuzha, Ernakulam).
+1. **Overview:** press ▶ under the map to play the week, or click Day 1 → Day 3. The districts darken as the flood peaks (Alappuzha, Ernakulam).
 2. **Alerts & events:** turn on "Reports" to see the real tweets that drove replanning.
 3. **Results:** switch between "Demand met" and "Worst-off district". The AI agents are fairest, and the optimiser meets slightly more demand.
-4. **Simulate:** Start week → Play day 1 → close "Alappuzha – Kottayam" → Play to end. Set "Colour by" to "Share of need met".
+4. **Simulate:** Start week → Play day 1 → close "Alappuzha – Kottayam" → Play to end. Switch the map to "Need met" (top right).
 5. **What-if:** set stock to 50% and click Run what-if.
 
 ---

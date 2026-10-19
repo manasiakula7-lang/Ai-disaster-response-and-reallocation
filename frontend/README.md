@@ -23,7 +23,9 @@ The backend address defaults to `http://localhost:8000`. To change it, copy `.en
 - Relief centres, sized by number of vehicles.
 - Roads, with that day's status (open / slowed / blocked; colour plus line style).
 - The 25 biggest shipments of the day (centre → district, width = truckloads).
-- Hover over anything for details. The day buttons switch the whole dashboard between 18 and 24 Aug 2018.
+- Hover over anything for details. The timeline under the map (with a ▶ play button) switches the whole dashboard between 18 and 24 Aug 2018.
+
+**Layout:** dark control-room theme by default (Light/Dark switch on the left rail), navigation rail, section panel, map with floating controls, and a "Today at a glance" column (headline numbers, most affected districts, latest alerts). A help guide opens on the first visit.
 
 **Side panel tabs:**
 
@@ -39,7 +41,7 @@ Works in light and dark mode and on phones (map on top, panel below).
 
 ## Screenshots
 
-`docs/screenshots/`: overview, alerts, results, simulation, what-if, dark mode, mobile. The screenshots were taken without the OpenStreetMap base map, which isn't reachable from the build machine; on a normal internet connection the base map shows under the districts.
+`docs/screenshots/`: help guide, overview, alerts, results, simulation, what-if, light mode, laptop width, mobile. The screenshots were taken without the OpenStreetMap base map, which isn't reachable from the build machine; on a normal internet connection the base map shows under the districts.
 
 ## Files
 

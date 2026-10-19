@@ -1,5 +1,6 @@
 export const DAYS = [1, 2, 3, 4, 5, 6, 7];
 export const dayLabel = (d) => `Day ${d} · ${17 + d} Aug 2018`;
+export const dayDate = (d) => `${17 + d} Aug`;
 
 export const RESOURCES = ["food_kits", "water_litres", "medicine_kits", "rescue_teams"];
 export const RESOURCE_LABEL = {

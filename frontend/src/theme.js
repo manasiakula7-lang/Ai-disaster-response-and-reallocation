@@ -5,16 +5,19 @@ import { useEffect, useState } from "react";
 export const cssVar = (name) =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#2a78d6";
 
-// Re-render when the OS switches between light and dark.
-export function useColorScheme() {
-  const q = window.matchMedia("(prefers-color-scheme: dark)");
-  const [dark, setDark] = useState(q.matches);
+// Light / dark theme. Dark is the default (control-room look); the choice is remembered.
+export function useTheme() {
+  const [theme, setTheme] = useState(() => {
+    let t = "dark";
+    try { t = localStorage.getItem("theme") || "dark"; } catch { /* storage blocked */ }
+    document.documentElement.dataset.theme = t; // before the first paint, so charts read the right colours
+    return t;
+  });
   useEffect(() => {
-    const f = (e) => setDark(e.matches);
-    q.addEventListener("change", f);
-    return () => q.removeEventListener("change", f);
-  }, []);
-  return dark;
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem("theme", theme); } catch { /* private window */ }
+  }, [theme]);
+  return [theme, setTheme];
 }
 
 export const axisProps = () => ({

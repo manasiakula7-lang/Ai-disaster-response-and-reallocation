@@ -2,29 +2,23 @@ import React from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { RESOURCES, RESOURCE_LABEL, severityColor } from "../constants.js";
 import { axisProps, cssVar, gridProps, tooltipProps } from "../theme.js";
+import { KpiCards } from "./KpiColumn.jsx";
 
-const fmt = (v) => Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 });
 
-export default function OverviewPanel({ districts, events, planned }) {
+export default function OverviewPanel({ districts, planned, kpis }) {
   if (!districts) return <p className="note">Loading…</p>;
   const props = districts.features.map((f) => f.properties);
-  const displaced = props.reduce((s, p) => s + (p.displaced_people || 0), 0);
-  const severe = props.filter((p) => p.severity >= 0.5).length;
-  const alerts = (events || []).filter((e) => e.type === "alert").length;
   const sev = [...props].sort((a, b) => b.severity - a.severity)
     .map((p) => ({ name: p.name, severity: Number(p.severity?.toFixed(3)) }));
   const byRes = RESOURCES.map((r) => {
     const need = props.reduce((s, p) => s + (p[r] || 0), 0);
-    return { resource: RESOURCE_LABEL[r], share: need ? Math.min(1, (planned?.byResource[r] || 0) / need) : 0 };
+    return { resource: RESOURCE_LABEL[r].split(" ")[0], share: need ? Math.min(1, (planned?.byResource[r] || 0) / need) : 0 };
   });
 
   return (
     <div>
-      <div className="tiles">
-        <div className="tile"><div className="v">{fmt(displaced)}</div><div className="k">people displaced</div></div>
-        <div className="tile"><div className="v">{severe}</div><div className="k">districts at high severity</div></div>
-        <div className="tile"><div className="v">{alerts}</div><div className="k">alerts raised</div></div>
-      </div>
+      {/* the right-hand column shows these on wide screens */}
+      <div className="only-narrow"><KpiCards k={kpis} /></div>
 
       <h2>Severity by district</h2>
       <p className="note">GAT severity score (0-1), same colours as the map.</p>

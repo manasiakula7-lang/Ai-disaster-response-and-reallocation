@@ -1,28 +1,42 @@
 # Dashboard guide: what everything does
 
-The dashboard shows the August 2018 Kerala flood week (Day 1 = 18 Aug to Day 7 = 24 Aug) as a relief coordinator would see it. On the **left** is the map. On the **right** are five tabs. Everything comes from the backend (FastAPI + PostGIS), which serves the results of Steps 1-6.
+The dashboard shows the August 2018 Kerala flood week (Day 1 = 18 Aug to Day 7 = 24 Aug) as a relief coordinator would see it. It opens in a dark "control room" look with four areas:
+
+- **Far left, the navigation rail:** the five sections (Overview, Alerts, Results, Simulate, What-if), plus **Help** (the quick-start guide that pops up on first visit) and a **Light / Dark** switch.
+- **Left panel:** the section you picked, with a one-line explanation at the top.
+- **Centre, the map:** with floating controls on top of it.
+- **Right column, "Today at a glance":** the day's headline numbers, the 5 worst-hit districts and the latest alerts. On smaller laptop screens this column is hidden and the numbers move into the Overview panel. On a phone the sections move to a bar at the bottom.
+
+Everything comes from the backend (FastAPI + PostGIS), which serves the results of Steps 1-6.
 
 ---
 
-## 1. Top bar (controls for the map)
+## 1. Controls on the map
 
-| Control | What it does |
-|---|---|
-| **Day 1 … Day 7** | Picks the day. The map, the Overview tab and the Alerts tab all switch to that day. They're greyed out while a simulation is running, because the simulation picks the day then. |
-| **Colour by: Severity** | Colours each district by its **GAT severity score** (Step 2), from light orange (low) to dark orange (high). |
-| **Colour by: Share of need met** | Colours each district by how much of its need that day's plan covers, from light blue (little) to dark blue (all of it). This shows *fairness* at a glance: a pale district is being left behind. |
-| **Base map** | Shows or hides the OpenStreetMap streets underneath (needs internet). |
-| **Roads** | Shows or hides the 21 district-to-district road links. |
-| **Centres** | Shows or hides the 19 relief centres. |
-| **Shipments** | Shows or hides the blue lines for the day's planned deliveries. |
+| Control | Where | What it does |
+|---|---|---|
+| **Day timeline (Day 1 … Day 7)** | bottom centre | Picks the day. The map, the right-hand column, Overview and Alerts all switch to that day. While a simulation runs, it shows the simulated day instead. |
+| **▶ Play** | left of the timeline | Plays the week automatically, one day every 1.6 seconds, so you can watch the flood rise and fall. Press again to pause. |
+| **Severity / Need met** | top right | Colours each district by its **GAT severity score** (Step 2, light to dark orange) or by **how much of its need that day's plan covers** (light to dark blue). "Need met" shows *fairness* at a glance: a pale district is being left behind. |
+| **Streets** | top right | Shows or hides the street map underneath (needs internet). |
+| **Roads** | top right | Shows or hides the 21 district-to-district road links. |
+| **Centres** | top right | Shows or hides the 19 relief centres. |
+| **Shipments** | top right | Shows or hides the glowing blue lines for the day's planned deliveries. |
+| **+ / −** | bottom right | Zoom. You can also scroll and drag. |
+
+## 1b. Right column: today at a glance
+
+- **People displaced**, **districts at high severity** (score ≥ 0.5), **alerts raised today** and **share of today's need planned** (the average over food, water, medicine and rescue teams).
+- **Most affected:** the 5 districts with the highest severity, each with a bar.
+- **Latest alerts:** the newest 4 alerts, with a link to the full list in the Alerts section.
 
 ## 2. The map
 
 - **Districts (14 shapes):** hover over one to see its severity score and class, displaced people, food and water needed, and vulnerability index.
-- **Roads:** green solid = open, yellow dashed = slowed, red dotted = blocked. Hover to see the current travel time. The road status changes day by day with the flood.
-- **Relief centres (dark circles):** a bigger circle means more vehicles. Hover to see the stock (food, water, medicine, rescue teams, vehicles).
-- **Shipments (blue lines):** from a centre to a district. A thicker line means more truckloads. Only the 25 biggest are drawn, so the map stays readable. Hover to see the exact truckloads.
-- **Legend (bottom left):** explains the colours. Click its title to fold it away.
+- **Roads:** green solid = open, yellow dashed = slowed, red dotted and blinking = blocked. Hover to see the current travel time. The road status changes day by day with the flood.
+- **Relief centres (white circles in dark mode, black in light mode):** a bigger circle means more vehicles. Hover to see the stock (food, water, medicine, rescue teams, vehicles).
+- **Shipments (glowing blue lines):** from a centre to a district. The dashes move in the direction of travel, and a thicker line means more truckloads. Only the 25 biggest are drawn, so the map stays readable. Hover to see the exact truckloads.
+- **Legend (top left, under the date):** explains the colours. Click its title to fold it away.
 - You can zoom and pan as normal.
 
 ---
@@ -31,7 +45,7 @@ The dashboard shows the August 2018 Kerala flood week (Day 1 = 18 Aug to Day 7 =
 
 A one-glance summary of the chosen day.
 
-- **Three tiles:** total **people displaced**, number of **districts at high severity** (score ≥ 0.5) and number of **alerts raised** that day.
+- On smaller screens, the four headline numbers from the right-hand column appear here first.
 - **Severity by district:** a bar chart of all 14 districts, ranked by GAT severity, using the same colours as the map. This is where Step 2 shows up.
 - **Share of today's need covered by the plan:** for food, water, medicine and rescue teams, how much of the total need the AI agents' plan (Step 6) ships that day. It's what was *planned*, not what was delivered: a truck on a road that turns out blocked doesn't arrive.
 
