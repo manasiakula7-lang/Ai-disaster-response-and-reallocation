@@ -89,6 +89,7 @@ Each step ends in something runnable and demo-able, so the project is presentabl
 ### Step 7: Backend + database (Phase 7)
 - PostgreSQL + PostGIS: districts (geometry), centres, roads, stock, demand, allocations, event log.
 - FastAPI endpoints: `/districts`, `/centres`, `/demand`, `/allocations`, `/simulate/step`, `/whatif`, `/metrics`. Test with Postman.
+- **Done (2026-10-19):** `backend/`. PostGIS schema (10 tables), loader for all Step 0-6 outputs, 20 endpoints incl. spatial queries, live simulation sessions with road closures, and what-if; 12 passing tests; `docker-compose.yml` for the database. See `backend/README.md`.
 
 ### Step 8: Dashboard (Phase 8)
 - React + Leaflet: district choropleth by severity, centre markers, allocation routes, blocked roads.

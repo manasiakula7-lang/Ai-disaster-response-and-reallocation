@@ -13,4 +13,11 @@ joblib
 torch
 torch_geometric
 flwr[simulation]
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg[binary]
+geoalchemy2
+pytest
+httpx
 ortools

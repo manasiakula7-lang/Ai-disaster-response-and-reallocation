@@ -1,0 +1,15 @@
+# PostgreSQL 16 + PostGIS 3.4 for the backend (Step 7).
+#   docker compose up -d db
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: relief
+      POSTGRES_PASSWORD: relief
+      POSTGRES_DB: relief
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
