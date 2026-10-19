@@ -48,6 +48,7 @@ def health(db: DBSession = Depends(get_db)):
 def districts(day: Optional[int] = Day, simplify: float = 0.002, db: DBSession = Depends(get_db)):
     rows = q(db, """
         SELECT d.name, d.population, d.vulnerability, d.flood_exposure_100yr,
+               ST_Y(d.hq) AS hq_lat, ST_X(d.hq) AS hq_lon,
                s.severity, s.severity_class,
                m.displaced_people, m.food_kits, m.water_litres, m.medicine_kits, m.rescue_teams,
                ST_AsGeoJSON(ST_SimplifyPreserveTopology(d.geom, :tol), 5) AS geometry
