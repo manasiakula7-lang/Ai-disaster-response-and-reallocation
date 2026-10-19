@@ -2,7 +2,7 @@
 
 RESPONDA shows the August 2018 Kerala flood week (Day 1 = 18 Aug to Day 7 = 24 Aug) as a relief coordinator would see it, using the results of Steps 1-6 served by the backend (FastAPI + PostGIS).
 
-**Layout.** The sidebar on the left has the seven pages. Each page has a big title at the top and, on the right, the **day picker**: changing the day updates every page that shows "today". On a phone the sidebar becomes a scrollable bar at the top.
+**Layout.** The sidebar on the left has the eight pages. Each page has a big title at the top and, on the right, the **day picker**: changing the day updates every page that shows "today". On a phone the sidebar becomes a scrollable bar at the top.
 
 **Colour themes.** Under **THEME** at the bottom of the sidebar you can switch between four colour schemes: **Navy** (default), **Ocean** (dark teal), **Graphite** (charcoal with violet) and **Daylight** (light, good for projectors and printing). The browser remembers your choice. Switching theme resets the page you are on, so pick it before starting a simulation.
 
@@ -87,7 +87,30 @@ The allocation simulator: plays the whole flood week with two strategies on the 
 
 ![Custom what-if](screenshots/5c-custom-whatif.png)
 
-## 5b. Live Simulation (the seven-day simulation)
+## 5b. Live Operations (new reports arriving)
+
+![Live operations](screenshots/9-live.png)
+
+The week runs on a clock, crisis reports keep arriving, and the allocation is redone after every one. This is the Step 6 reallocation loop running live: played to the end with no typed reports, it gives exactly the Step 6 result (58.3% of need met on the official week, AI agents).
+
+**Controls:** pick the strategy (AI agents or Optimiser + rationing), **Play / Pause**, the **clock speed** (15 minutes, 1 hour or 3 hours of flood time per second), **Next event** to jump to the next report, road change or dispatch wave, and **Restart week**.
+
+**Where reports come from**
+- **Real tweets (replay):** the 449 flood-week tweets arrive at the time they were posted. Each one moves the planner's estimate of that district's need halfway to the true need (the Step 6 rule).
+- **Field reports you type:** write or paste any message in **Submit a field report** (or click an example) and press **Send report**. The Step 1 model reads it on the spot: category and confidence, urgency, needs, and the district (from a place name such as Chengannur or Aluva, or the district you choose). The number of people it mentions ("40 families" = 160 people) becomes new need in that district: food 1 kit per 4 people, 15 L of water per person, 1 medicine kit per 50 people, and a rescue team when rescue is asked. If no number is given, the head count is estimated from the urgency. Because the day's stock budget was fixed in the morning, the nearest centres that can still reach the district release that much extra from their reserve.
+
+**What happens next:** the next dispatch wave (06:00, 12:00, 18:00 or 24:00) is re-planned straight away with the stock and trucks left. Reports with urgency 0.7 or more also raise an alert.
+
+**What you see**
+- **Cards:** reports received, how many events changed the plan, alerts, and need met over the days closed so far.
+- **Live situation map:** districts coloured by how much of today's need has been delivered, the next wave's shipments, today's roads, and the district of the latest report outlined.
+- **Live feed:** every tweet, field report, road change, dispatch and alert as it happens, filterable. "plan changed · N" marks events that moved shipments. Click one to see its effect.
+- **How the plan changed:** for the selected event, the shipments of the next wave just before and just after it (centre, district, resource, before, after), with totals per district. A real tweet can also be opened in Decision Support.
+- **District picture right now:** for each district, the morning forecast, the planner's current estimate, the true need, what was sent today and the next wave (food kits), plus stock left and the closed days.
+
+![How the plan changed](screenshots/9b-live-replan.png)
+
+## 5c. 7-Day Simulation
 
 ![Live simulation](screenshots/8-simulation.png)
 

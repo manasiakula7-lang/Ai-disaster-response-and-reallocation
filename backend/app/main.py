@@ -14,7 +14,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session as DBSession
 
-from backend.app import insights, sim
+from backend.app import insights, live, sim
 from backend.app.db import get_db
 from backend.app.models import Allocation, Artifact
 
@@ -346,3 +346,65 @@ def evaluate(req: EvalRequest):
             raise HTTPException(422, f"policy must be one of {list(sim.POLICIES)}")
     return insights.evaluate(sim.Session, req.policy, req.baseline, req.closed_edges,
                              req.stock_factor, req.demand_factor)
+
+
+# ------------------------------------------------------------ live operations
+class LiveStart(BaseModel):
+    policy: str = Field("mappo", description="mappo | lp_rationed")
+
+
+class LiveAdvance(BaseModel):
+    hours: float = Field(1.0, ge=0, le=200, description="clock hours to move forward")
+    until: Optional[str] = Field(None, description="'event' = stop after the next report, road change or wave")
+
+
+class LiveReport(BaseModel):
+    text: str = Field(..., min_length=3, max_length=1000)
+    district: Optional[str] = Field(None, description="leave empty to locate the report from its text")
+
+
+def _live(session_id):
+    if session_id not in live.LIVE:
+        raise HTTPException(404, "unknown live session; start a new one")
+    return live.LIVE[session_id]
+
+
+@app.post("/live", summary="Start a live session: the official week replayed on a clock")
+def live_start(req: LiveStart):
+    if req.policy not in ("mappo", "lp_rationed"):
+        raise HTTPException(422, "policy must be mappo or lp_rationed")
+    s = live.LiveSession(req.policy)
+    live.LIVE[s.id] = s
+    while len(live.LIVE) > 20:                       # keep memory bounded
+        live.LIVE.pop(next(iter(live.LIVE)))
+    return {"state": s.state(), "events": s.since(0)}
+
+
+@app.get("/live/{session_id}", summary="Live state, plus events after `since`")
+def live_state(session_id: str, since: int = 0):
+    s = _live(session_id)
+    return {"state": s.state(), "events": s.since(since)}
+
+
+@app.post("/live/{session_id}/advance", summary="Move the clock; reports and road changes arrive, waves dispatch")
+def live_advance(session_id: str, req: LiveAdvance):
+    s = _live(session_id)
+    events = s.advance(req.hours, req.until)
+    return {"state": s.state(), "events": events}
+
+
+@app.post("/live/{session_id}/report", summary="Submit a new crisis report; it is read by the NLP and the plan is redone")
+def live_report(session_id: str, req: LiveReport):
+    s = _live(session_id)
+    if req.district and req.district not in s.env.districts:
+        raise HTTPException(422, f"unknown district {req.district}")
+    try:
+        out = s.submit(req.text, req.district)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+    return out | {"state": s.state()}
+
+
+@app.post("/analyse", summary="Run the Step 1 NLP on one message (no plan change)")
+def analyse_text(req: LiveReport):
+    return live.analyse(req.text, req.district)

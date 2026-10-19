@@ -548,3 +548,16 @@ table.t td.num, table.t th.num { text-align: right; }
   .mapbox, .mapbox.tall { height: 420px; }
   .round-cards { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ---------- Live operations ---------- */
+.field textarea {
+  font: inherit; color: var(--text); background: var(--card-2); border: 1px solid var(--border-strong);
+  border-radius: 12px; padding: 12px 14px; resize: vertical; min-height: 96px; font-weight: 400;
+}
+.field textarea:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.feed-item.log.sel { border-color: var(--accent-2); background: var(--accent-soft); }
+button.feed-item.log { cursor: pointer; }
+button.feed-item.log:hover { border-color: var(--border-strong); }
+.feed-item .top .tag { font-size: 11px; padding: 1px 8px; }
+table.t tr.hl td { background: var(--accent-soft); }
+.btn .icon, .btn svg { vertical-align: -2px; }

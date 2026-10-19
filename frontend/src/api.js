@@ -35,4 +35,9 @@ export const api = {
   decisions: (day) => request(`/decisions?${qs({ day })}`),
   decision: (id) => request(`/decision/${id}`),
   evaluate: (body) => request("/evaluate", { method: "POST", body: JSON.stringify(body) }),
+  liveStart: (policy) => request("/live", { method: "POST", body: JSON.stringify({ policy }) }),
+  liveState: (id, since = 0) => request(`/live/${id}?${qs({ since })}`),
+  liveAdvance: (id, body) => request(`/live/${id}/advance`, { method: "POST", body: JSON.stringify(body) }),
+  liveReport: (id, text, district) =>
+    request(`/live/${id}/report`, { method: "POST", body: JSON.stringify({ text, district: district || null }) }),
 };

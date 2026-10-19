@@ -82,7 +82,7 @@ export default function SimulationPage({ centres }) {
 
   return (
     <>
-      <PageHead eyebrow="Seven-day simulation" title="Live Simulation"
+      <PageHead eyebrow="Step-by-step week" title="7-Day Simulation"
         subtitle="Play the flood week one day at a time through the backend, and close roads while it runs">
         <span className="region">{sim ? (sim.state.done ? "WEEK FINISHED" : `NEXT · DAY ${sim.state.next_day}`) : "NOT STARTED"}</span>
       </PageHead>

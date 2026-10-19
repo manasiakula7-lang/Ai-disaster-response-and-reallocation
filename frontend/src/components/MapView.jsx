@@ -32,7 +32,7 @@ function FitBounds({ data }) {
 
 // colorMode: "class" (high / moderate / low), "severity" (score ramp) or "coverage" (share of need met)
 export default function MapView({
-  districts, centres, roads, flows, colorMode = "class", coverage, layers, dayKey, tall, onPick,
+  districts, centres, roads, flows, colorMode = "class", coverage, layers, dayKey, tall, onPick, highlight,
 }) {
   const fill = (p) => colorMode === "coverage" ? coverageColor(coverage?.[p.name])
     : colorMode === "severity" ? severityColor(p.severity) : CLASS_COLOR[p.severity_class] || "#888";
@@ -49,9 +49,11 @@ export default function MapView({
         <FitBounds data={districts} />
         {districts && (
           <GeoJSON
-            key={`d-${dayKey}-${colorMode}-${JSON.stringify(coverage || {}).length}`}
+            key={`d-${dayKey}-${colorMode}-${JSON.stringify(coverage || {})}-${highlight || ""}`}
             data={districts}
-            style={(f) => ({ fillColor: fill(f.properties), fillOpacity: 0.72, color: cssVar("--district-edge"), weight: 1.4 })}
+            style={(f) => (f.properties.name === highlight
+              ? { fillColor: fill(f.properties), fillOpacity: 0.85, color: cssVar("--accent-2"), weight: 4 }
+              : { fillColor: fill(f.properties), fillOpacity: 0.72, color: cssVar("--district-edge"), weight: 1.4 })}
             onEachFeature={(f, layer) => {
               const p = f.properties;
               layer.bindTooltip(
@@ -63,7 +65,7 @@ export default function MapView({
               );
               layer.on({
                 mouseover: () => layer.setStyle({ weight: 3 }),
-                mouseout: () => layer.setStyle({ weight: 1.4 }),
+                mouseout: () => layer.setStyle({ weight: p.name === highlight ? 4 : 1.4 }),
                 click: () => onPick?.(p.name),
               });
             }}

@@ -67,6 +67,18 @@ To use a different database, set `DATABASE_URL`, e.g. `postgresql+psycopg://user
 
 Sessions are kept in memory (enough for a demo; they're lost when the server restarts).
 
-**Tests:** `python -m pytest backend/tests -q` (15 tests).
+### Live operations (`app/live.py`)
+
+| Endpoint | What it does |
+|---|---|
+| `POST /live` | Start a live session `{"policy": "mappo"}` (or `lp_rationed`): the official week on a clock at Day 1 00:00 |
+| `POST /live/{id}/advance` | `{"hours": 1}` moves the clock; `{"until": "event"}` stops after the next report, road change or dispatch wave. Returns the new events and the state |
+| `POST /live/{id}/report` | `{"text": "...", "district": null}`: a new field report. Runs the Step 1 NLP, adds the people it mentions as new need, releases reserve stock from the nearest centres and re-plans the next wave. Returns the NLP result and the before/after plan change |
+| `GET /live/{id}?since=N` | State plus events after sequence number N |
+| `POST /analyse` | Step 1 NLP on one message, no plan change |
+
+A live session is the Step 6 loop (`ml/realloc/loop.py`) run event by event: played to the end without typed reports it reproduces the Step 6 official result exactly (one of the tests).
+
+**Tests:** `python -m pytest backend/tests -q` (17 tests).
 
 **Checked:** the API's simulation reproduces the Step 3 result exactly (LP max coverage, 67.8%). It's one of the tests.

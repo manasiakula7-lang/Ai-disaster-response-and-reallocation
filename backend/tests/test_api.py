@@ -108,3 +108,24 @@ def test_evaluate_closing_roads_hurts():
     base = client.post("/evaluate", json={}).json()
     cut = client.post("/evaluate", json={"closed_edges": [0, 6], "stock_factor": 0.6}).json()
     assert cut["results"]["mappo"]["metrics"]["fulfilment"] < base["results"]["mappo"]["metrics"]["fulfilment"]
+
+
+def test_live_session_report_replans():
+    s = client.post("/live", json={}).json()
+    sid = s["state"]["session_id"]
+    r = client.post(f"/live/{sid}/advance", json={"hours": 7}).json()
+    assert r["state"]["time"] == "07:00" and any(e["type"] == "dispatch" for e in r["events"])
+    before = r["state"]["districts"]["Alappuzha"]["estimate"]["food_kits"]
+    rep = client.post(f"/live/{sid}/report", json={
+        "text": "Urgent: 200 families stranded in Chengannur with no food or drinking water"}).json()
+    assert rep["nlp"]["district"] == "Alappuzha" and rep["nlp"]["people_used"] == 800
+    assert rep["state"]["districts"]["Alappuzha"]["estimate"]["food_kits"] >= before + 199.9
+    assert "replan" in rep["event"]
+    nowhere = client.post(f"/live/{sid}/report", json={"text": "need food urgently"}).json()
+    assert nowhere["nlp"]["district"] is None
+
+
+def test_live_week_matches_step6():
+    sid = client.post("/live", json={}).json()["state"]["session_id"]
+    st = client.post(f"/live/{sid}/advance", json={"hours": 200}).json()["state"]
+    assert st["done"] and st["metrics"]["fulfilment"] == pytest.approx(0.5831, abs=1e-3)
