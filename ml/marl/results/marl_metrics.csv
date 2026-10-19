@@ -1,0 +1,10 @@
+policy,fulfilment,fulfil_food_kits,fulfil_water_litres,fulfil_medicine_kits,fulfil_rescue_teams,vuln_weighted_fulfilment,worst_district_fulfilment,gini,avg_delay_hr,neglect_district_days
+Local-first (nearest centre),0.6298,0.6503,0.6088,0.4953,0.7647,0.7579,0.3832,0.1231,2.1565,2
+Greedy by severity,0.6435,0.6135,0.6155,0.5803,0.7647,0.515,0.12,0.2654,6.4066,0
+LP: max coverage (OR-Tools),0.678,0.6593,0.5848,0.7034,0.7647,0.6851,0.5092,0.0616,2.3224,2
+LP: fairness-aware (OR-Tools),0.6779,0.6593,0.5844,0.7034,0.7647,0.7303,0.4811,0.0803,3.8149,2
+LP fair + rationing rule,0.677,0.6352,0.6049,0.7034,0.7647,0.8028,0.5532,0.1005,3.1661,0
+"MAPPO, no fairness term (α=0, β=0)",0.6355,0.6176,0.5125,0.6514,0.7606,0.7656,0.6651,0.0483,4.1977,0
+"MAPPO + fairness (α=0.5, β=1)",0.6233,0.6016,0.517,0.6097,0.7647,0.7355,0.6966,0.0201,5.88,0
+"MAPPO + strong fairness (α=1, β=3)",0.6213,0.5925,0.5329,0.5952,0.7647,0.7322,0.7015,0.0177,6.3253,0
+Hindsight optimum (knows the whole week; upper bound),0.6841,0.6593,0.609,0.7034,0.7647,0.8691,0.3694,0.1108,1.4209,4

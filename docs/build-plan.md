@@ -72,6 +72,7 @@ Each step ends in something runnable and demo-able, so the project is presentabl
 - One agent per relief centre, shared-parameter PPO (e.g., MAPPO via a small custom loop or `torchrl`/`rllib`), GAT embeddings as part of the observation.
 - Reward = fulfilment − delay penalty + α·vulnerability-weighted fulfilment − β·Gini; sweep α:β to show the efficiency-equity trade-off.
 - **Metric:** beat greedy on fairness without large efficiency loss; report vs. OR-Tools.
+- **Done (2026-10-19):** `ml/marl/`. MAPPO cuts Gini from 0.060 (best LP) to 0.017-0.019 and lifts the worst district from 56% to 70-75% of need, for about 3.5 points less total fulfilment. Total fulfilment is capped near 68-71% by stock (hindsight optimum). See `ml/marl/README.md`.
 
 ### Step 5: Federated training with Flower (Phase 5)
 - Each centre trains its local model on its own slice of data; FedAvg over Flower in simulation mode on one laptop.
