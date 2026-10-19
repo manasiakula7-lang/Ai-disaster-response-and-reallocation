@@ -51,7 +51,7 @@ git clone https://github.com/manasiakula7-lang/Ai-disaster-response-and-realloca
 cd Ai-disaster-response-and-reallocation
 ```
 
-If you already cloned it earlier, update it instead: `cd` into the folder and run `git pull`. After every `git pull`, run Step 6 (`python -m backend.app.load`) again so the database has any new tables.
+If you already cloned it earlier, update it instead: `cd` into the folder and run `git pull`. After every `git pull`, activate the venv and run `pip install -r backend\requirements.txt` (it only downloads anything new) and Step 6 (`python -m backend.app.load`) again so the database has any new tables.
 
 ### Step 5. Python environment for the backend
 

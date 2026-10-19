@@ -11,8 +11,12 @@ import { cssVar } from "../theme.js";
 const fmt = (v, d = 0) => (v == null ? "–" : Number(v).toLocaleString("en-IN", { maximumFractionDigits: d }));
 const pct = (v) => (v == null ? "–" : `${Math.round(v * 100)}%`);
 
-// CARTO Voyager base map (OpenStreetMap data): light streets under the coloured districts.
-const TILES = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+// CARTO base maps (OpenStreetMap data, no key needed): dark streets for the dark themes, light for Daylight.
+// (The "rastertiles/voyager" style now asks for an API key, so it is not used.)
+const TILES = {
+  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+};
 
 // Zoom to Kerala once the district shapes arrive.
 function FitBounds({ data }) {
@@ -43,7 +47,7 @@ export default function MapView({
       <MapContainer className="map" center={[10.45, 76.35]} zoom={7} minZoom={6} zoomSnap={0.25} zoomDelta={0.5}
         scrollWheelZoom>
         {layers.basemap && (
-          <TileLayer subdomains="abcd" url={TILES}
+          <TileLayer subdomains="abcd" url={document.documentElement.dataset.theme === "light" ? TILES.light : TILES.dark}
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' />
         )}
         <FitBounds data={districts} />

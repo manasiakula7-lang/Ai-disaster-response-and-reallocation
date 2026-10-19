@@ -402,6 +402,8 @@ def live_report(session_id: str, req: LiveReport):
         out = s.submit(req.text, req.district)
     except ValueError as e:
         raise HTTPException(409, str(e))
+    except RuntimeError as e:
+        raise HTTPException(503, str(e))
     return out | {"state": s.state()}
 
 

@@ -25,15 +25,11 @@ import threading
 import uuid
 from collections import defaultdict
 
-import joblib
-
 from ml.env.metrics import episode_metrics
 from ml.env.relief_env import CONSUMABLES, RESOURCES, ROOT, TRUCKLOAD
 from ml.marl.scenarios import ScenarioEnv
-from ml.nlp.extract_reports import ACTIONABLE
 from ml.nlp.gazetteer import find_districts
 from ml.nlp.needs import find_resources, urgency_score
-from ml.nlp.train_classifier import clean
 from ml.realloc.loop import (FORECAST_SD, REPORT_PULL, RESOURCE_MAP, WAVES, LPPlanner, MappoPlanner,
                              apply_road_event, load_reports, road_times, travel_from)
 from backend.app.sim import summarise
@@ -51,8 +47,13 @@ _classifier = None
 
 
 def classifier():
+    # Imported here so the API still starts if scikit-learn is missing; only field reports need it.
     global _classifier
     if _classifier is None:
+        try:
+            import joblib
+        except ImportError as e:
+            raise RuntimeError("scikit-learn is not installed: run pip install -r backend/requirements.txt") from e
         _classifier = joblib.load(MODEL)
     return _classifier
 
@@ -69,6 +70,8 @@ def people_mentioned(text):
 
 def analyse(text, district=None):
     """Step 1 NLP on one message: category, confidence, needs, urgency, district."""
+    from ml.nlp.extract_reports import ACTIONABLE
+    from ml.nlp.train_classifier import clean
     model = classifier()
     p = model.predict_proba([clean(text)])[0]
     i = p.argmax()
