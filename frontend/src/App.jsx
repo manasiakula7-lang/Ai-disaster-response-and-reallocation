@@ -8,6 +8,7 @@ import NetworkPage from "./pages/NetworkPage.jsx";
 import DecisionPage from "./pages/DecisionPage.jsx";
 import AllocationPage from "./pages/AllocationPage.jsx";
 import AnalyticsPage from "./pages/AnalyticsPage.jsx";
+import SimulationPage from "./pages/SimulationPage.jsx";
 
 const PAGES = [
   { key: "overview", label: "Overview", icon: "overview" },
@@ -15,6 +16,7 @@ const PAGES = [
   { key: "network", label: "GAT Network", icon: "network" },
   { key: "decision", label: "Decision Support", icon: "shield" },
   { key: "allocation", label: "Resource Allocation", icon: "layers" },
+  { key: "simulate", label: "Live Simulation", icon: "pulse" },
   { key: "analytics", label: "Model Analytics", icon: "chart" },
 ];
 
@@ -50,8 +52,25 @@ export function summarisePlan(shipments, districts, centres) {
   return { flows: top, byResource, coverage };
 }
 
+// Colour themes; the tokens live in styles.css under :root[data-theme=...].
+export const THEMES = [
+  { key: "navy", label: "Navy", swatch: ["#0c1f3f", "#3b8cf6"] },
+  { key: "ocean", label: "Ocean", swatch: ["#0a2b33", "#14b8cc"] },
+  { key: "graphite", label: "Graphite", swatch: ["#1a1c22", "#8b7cf6"] },
+  { key: "light", label: "Daylight", swatch: ["#ffffff", "#2563eb"] },
+];
+const readTheme = () => {
+  try { const t = localStorage.getItem("responda-theme"); return THEMES.some((x) => x.key === t) ? t : "navy"; }
+  catch { return "navy"; }
+};
+
 export default function App() {
   const [route, setRoute] = useState(readHash);
+  const [theme, setTheme] = useState(readTheme);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem("responda-theme", theme); } catch { /* private window */ }
+  }, [theme]);
   const [day, setDay] = useState(3);
   const [centres, setCentres] = useState(null);
   const [dayData, setDayData] = useState({});
@@ -93,13 +112,25 @@ export default function App() {
           ))}
         </nav>
         <div className="side-spacer" />
+        <div className="theme-pick" role="radiogroup" aria-label="Colour theme">
+          <div className="side-label">THEME</div>
+          <div className="theme-row">
+            {THEMES.map((t) => (
+              <button key={t.key} role="radio" aria-checked={theme === t.key} title={t.label}
+                className={theme === t.key ? "on" : ""} onClick={() => setTheme(t.key)}>
+                <span className="sw" style={{ background: `linear-gradient(135deg, ${t.swatch[0]} 50%, ${t.swatch[1]} 50%)` }} />
+                <span className="nm">{t.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="side-foot">
           <span className="pin"><Icon name="pin" size={18} /></span>
           <div><b>Kerala, India</b><span>2018 floods · 14 districts</span></div>
         </div>
       </aside>
 
-      <main className="main">
+      <main className="main" key={theme}>
         {error && (
           <div className="page" style={{ paddingBottom: 0 }}>
             <div className="error-box">
@@ -114,6 +145,7 @@ export default function App() {
         {route.page === "decision" && <DecisionPage {...shared} />}
         {route.page === "allocation" && <AllocationPage {...shared} />}
         {route.page === "analytics" && <AnalyticsPage {...shared} />}
+        {route.page === "simulate" && <SimulationPage {...shared} />}
       </main>
     </div>
   );

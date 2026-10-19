@@ -7,8 +7,45 @@ import { CLASS_COLOR } from "../constants.js";
 
 const LAYER_LABEL = { basemap: "Streets", roads: "Roads", centres: "Centres", flows: "Shipments" };
 const MODES = [["class", "Priority class"], ["severity", "Priority score"], ["coverage", "Need met"]];
+const EVENT_TYPES = [["alert", "Alerts"], ["report", "Reports"], ["dispatch", "Dispatch waves"], ["road", "Road changes"]];
+const EVENT_LOOK = { alert: ["alerts", ""], report: ["tweet", "low"], dispatch: ["layers", "low"], road: ["road", "mid"] };
+const kindOf = (t) => (t.startsWith("road_") ? "road" : t);
 
-export default function GisPage({ day, setDay, districts, centres, roads, plan }) {
+// The Step 6 reallocation loop for one day, in time order, filterable by type.
+function EventLog({ events }) {
+  const [on, setOn] = useState({ alert: true, report: false, dispatch: true, road: true });
+  if (!events) return <p className="note">Loading…</p>;
+  const shown = events.filter((e) => on[kindOf(e.type)]);
+  const count = (k) => events.filter((e) => kindOf(e.type) === k).length;
+  return (
+    <>
+      <div className="filters">
+        {EVENT_TYPES.map(([k, label]) => (
+          <button key={k} className={on[k] ? "on" : ""} aria-pressed={on[k]} onClick={() => setOn({ ...on, [k]: !on[k] })}>
+            {on[k] ? "✓ " : ""}{label} ({count(k)})
+          </button>
+        ))}
+      </div>
+      {shown.length === 0 && <p className="note">Nothing to show for this filter.</p>}
+      <div className="feed scroll-list">
+        {shown.map((e, i) => {
+          const [icon, tone] = EVENT_LOOK[kindOf(e.type)];
+          return (
+            <div key={i} className="feed-item log">
+              <span className={`ico ${tone}`}><Icon name={icon} size={18} /></span>
+              <div className="body">
+                <div className="top">{e.time}{e.district ? ` · ${e.district}` : ""}<span>{e.type === "alert" ? "Alert" : e.type.replace("_", " ")}</span></div>
+                <div className="txt">{e.detail}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+export default function GisPage({ day, setDay, districts, centres, roads, plan, events }) {
   const [layers, setLayers] = useState({ basemap: true, roads: true, centres: true, flows: true });
   const [mode, setMode] = useState("class");
   const [playing, setPlaying] = useState(false);
@@ -86,6 +123,12 @@ export default function GisPage({ day, setDay, districts, centres, roads, plan }
               ))}
             </tbody>
           </table>
+        </Card>
+
+        <Card eyebrow="Reallocation loop (Step 6)" title="Event log"
+          subtitle="Everything that happened on this day in time order: real tweets, road changes, the four dispatch waves and the alerts they raised."
+          right={<span className="pill">{events?.length || 0} events</span>}>
+          <EventLog events={events} />
         </Card>
       </div>
     </>

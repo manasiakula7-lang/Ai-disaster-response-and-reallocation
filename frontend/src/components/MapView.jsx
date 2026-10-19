@@ -51,7 +51,7 @@ export default function MapView({
           <GeoJSON
             key={`d-${dayKey}-${colorMode}-${JSON.stringify(coverage || {}).length}`}
             data={districts}
-            style={(f) => ({ fillColor: fill(f.properties), fillOpacity: 0.72, color: "#ffffff", weight: 1.4 })}
+            style={(f) => ({ fillColor: fill(f.properties), fillOpacity: 0.72, color: cssVar("--district-edge"), weight: 1.4 })}
             onEachFeature={(f, layer) => {
               const p = f.properties;
               layer.bindTooltip(
@@ -91,7 +91,7 @@ export default function MapView({
               <Polyline positions={[f.from, f.to]} interactive={false}
                 pathOptions={{ color: flowColor, weight: w + 8, opacity: 0.18, lineCap: "round" }} />
               <Polyline positions={[f.from, f.to]}
-                pathOptions={{ color: "#2f74e0", weight: w, opacity: 0.95, dashArray: "10 8", lineCap: "round", className: "flow-line" }}>
+                pathOptions={{ color: cssVar("--flow-line"), weight: w, opacity: 0.95, dashArray: "10 8", lineCap: "round", className: "flow-line" }}>
                 <Tooltip sticky>{f.centre} → {f.district}: <b>{fmt(f.loads, 1)} truckloads</b></Tooltip>
               </Polyline>
             </React.Fragment>
@@ -102,7 +102,7 @@ export default function MapView({
           const [lon, lat] = f.geometry.coordinates;
           return (
             <CircleMarker key={`c-${p.centre_id}`} center={[lat, lon]} radius={4 + p.vehicles / 3}
-              pathOptions={{ color: "#ffffff", weight: 2, fillColor: "#0c1f3f", fillOpacity: 0.95 }}>
+              pathOptions={{ color: cssVar("--centre"), weight: 2, fillColor: cssVar("--card"), fillOpacity: 0.95 }}>
               <Tooltip>
                 <b>{p.name}</b> ({p.centre_id})<br />
                 Food {fmt(p.food_kits)} · Water {fmt(p.water_litres / 1000)}k L<br />
@@ -134,13 +134,13 @@ export default function MapView({
           ))}
           {layers.centres && (
             <div className="row">
-              <svg width="26" height="12"><circle cx="13" cy="6" r="5" fill="#0c1f3f" stroke="#fff" strokeWidth="2" /></svg>
+              <svg width="26" height="12"><circle cx="13" cy="6" r="5" style={{ fill: "var(--card)", stroke: "var(--text)" }} strokeWidth="2" /></svg>
               Relief centre
             </div>
           )}
           {layers.flows && (
             <div className="row">
-              <svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="#2f74e0" strokeWidth="3" strokeDasharray="6 4" /></svg>
+              <svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" style={{ stroke: "var(--flow-line)" }} strokeWidth="3" strokeDasharray="6 4" /></svg>
               Shipment
             </div>
           )}

@@ -72,7 +72,7 @@ export default function NetworkPage({ day, setDay }) {
             right={<span className="pill">14 districts · 21 links</span>}>
             <div className="legend-row">
               {["high", "medium", "low"].map((c) => <span key={c}><span className="dot" style={{ background: CLASS_COLOR[c] }} />{CLASS_LABEL[c]} priority</span>)}
-              <span><span className="dot" style={{ background: "#fff", border: "2px solid var(--teal)" }} />Relief centre</span>
+              <span><span className="dot" style={{ background: "var(--card)", border: "2px solid var(--teal)" }} />Relief centre</span>
             </div>
             <div className="net-wrap">
               <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="District graph">
@@ -83,13 +83,13 @@ export default function NetworkPage({ day, setDay }) {
                 </defs>
                 {graph.centres.map((c) => (
                   <line key={`h-${c.centre_id}`} x1={pos[c.district][0]} y1={pos[c.district][1]} x2={pos[c.centre_id][0]} y2={pos[c.centre_id][1]}
-                    stroke="#22c3a0" strokeWidth="2" strokeDasharray="5 5" opacity={c.district === focus ? 1 : 0.55} />
+                    style={{ stroke: "var(--teal)" }} strokeWidth="2" strokeDasharray="5 5" opacity={c.district === focus ? 1 : 0.55} />
                 ))}
                 {graph.edges.map((e) => {
                   const on = e.source === focus || e.target === focus;
                   return (
                     <line key={e.edge_id} x1={pos[e.source][0]} y1={pos[e.source][1]} x2={pos[e.target][0]} y2={pos[e.target][1]}
-                      stroke={e.status === "blocked" ? "#f0566b" : on ? "#62b0ff" : "#8fb3e8"}
+                      style={{ stroke: e.status === "blocked" ? "var(--high)" : on ? "var(--accent-2)" : "var(--link)" }}
                       strokeDasharray={e.status === "blocked" ? "4 6" : undefined}
                       strokeWidth={1 + (e.attention / maxAtt) * 6} opacity={on ? 0.95 : 0.4}>
                       <title>{`${e.source} – ${e.target}: attention ${e.attention.toFixed(2)}, ${e.status}`}</title>
@@ -100,8 +100,8 @@ export default function NetworkPage({ day, setDay }) {
                   const [x, y] = pos[c.centre_id];
                   return (
                     <g key={c.centre_id} className="node" onClick={() => setSel(c.district)}>
-                      <circle cx={x} cy={y} r="15" fill="#0c1f3f" stroke="#22c3a0" strokeWidth="2.5" />
-                      <path d={`M${x - 6} ${y + 1}l6-5 6 5M${x - 4} ${y}v5h8v-5`} stroke="#fff" strokeWidth="1.6" fill="none" />
+                      <circle cx={x} cy={y} r="15" style={{ fill: "var(--card)", stroke: "var(--teal)" }} strokeWidth="2.5" />
+                      <path d={`M${x - 6} ${y + 1}l6-5 6 5M${x - 4} ${y}v5h8v-5`} style={{ stroke: "var(--text)" }} strokeWidth="1.6" fill="none" />
                       <title>{c.name}</title>
                     </g>
                   );
@@ -113,9 +113,9 @@ export default function NetworkPage({ day, setDay }) {
                   return (
                     <g key={n.district} className="node" onClick={() => setSel(n.district)}
                       onMouseEnter={() => setHover(n.district)} onMouseLeave={() => setHover(null)}>
-                      {isSel && <circle cx={x} cy={y} r={r + 9} fill="none" stroke="#fff" strokeWidth="2" opacity="0.8" />}
+                      {isSel && <circle cx={x} cy={y} r={r + 9} fill="none" style={{ stroke: "var(--text)" }} strokeWidth="2" opacity="0.8" />}
                       <circle cx={x} cy={y} r={r} fill={CLASS_COLOR[n.severity_class]} opacity="0.35" filter="url(#glow)" />
-                      <circle cx={x} cy={y} r={r - 3} fill={CLASS_COLOR[n.severity_class]} stroke="#e8f0ff" strokeWidth="2" />
+                      <circle cx={x} cy={y} r={r - 3} fill={CLASS_COLOR[n.severity_class]} style={{ stroke: "var(--district-edge)" }} strokeWidth="2" />
                       <text x={x} y={y + 4} textAnchor="middle">{ranked.indexOf(n.district) + 1}</text>
                       <g className="label">
                         <rect x={x - 21} y={y - r - 24} width="42" height="18" rx="6" />

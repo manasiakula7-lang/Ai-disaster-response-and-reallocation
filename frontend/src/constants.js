@@ -1,3 +1,4 @@
+import { cssVar } from "./theme.js";
 export const DAYS = [1, 2, 3, 4, 5, 6, 7];
 export const dayLabel = (d) => `Day ${d} · ${17 + d} Aug 2018`;
 export const dayDate = (d) => `${17 + d} Aug`;
@@ -43,7 +44,8 @@ export const RESOURCE_SHORT = { food_kits: "Food", water_litres: "Water", medici
 
 // Severity classes from the GAT (Step 2): high >= 0.5, medium >= 0.3, else low.
 export const CLASS_LABEL = { high: "High", medium: "Moderate", low: "Low" };
-export const CLASS_COLOR = { high: "#f0566b", medium: "#f5a33b", low: "#22c3a0" };
+// Status colours follow the active theme (--high / --medium / --low tokens).
+export const CLASS_COLOR = new Proxy({}, { get: (_, k) => cssVar(`--${String(k)}`) });
 
 export const STRATEGIES = [
   ["mappo", "AI agents (MAPPO + fairness)"],

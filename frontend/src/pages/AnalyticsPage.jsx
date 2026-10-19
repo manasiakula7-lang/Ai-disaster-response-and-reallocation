@@ -6,9 +6,9 @@ import { axisProps, cssVar, gridProps, tooltipProps } from "../theme.js";
 import ComparePanel from "../components/ComparePanel.jsx";
 import { Card, Meter, PageHead, Stat, fmt, pct } from "../components/ui.jsx";
 
-const NEED_COLOR = { food: "#3b8cf6", rescue: "#22c3a0", shelter: "#9585f2", medicine: "#f5a33b", water: "#f0566b" };
+const NEED_COLOR = { food: "var(--series-1)", rescue: "var(--series-2)", shelter: "var(--series-3)", medicine: "var(--series-4)", water: "var(--series-5)" };
 const NEED_WORD = { food: "Food", water: "Water", medicine: "Medicine", rescue: "Rescue", shelter: "Shelter" };
-const MODEL_COLOR = { "Persistence (tomorrow = today)": "#f5a33b", "MLP (no graph)": "#9585f2", GCN: "#22c3a0", GAT: "#3b8cf6" };
+const MODEL_COLOR = { "Persistence (tomorrow = today)": "var(--series-4)", "MLP (no graph)": "var(--series-3)", GCN: "var(--series-2)", GAT: "var(--series-1)" };
 
 function ErrorDots({ rows, split }) {
   const data = rows.filter((r) => r.split === split).map((r) => ({ ...r, v: parseFloat(r.mae) }));
@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
             {[...nlp.classes].sort((x, y) => y.f1 - x.f1).map((c) => (
               <div className="bar-row" key={c.label} style={{ gridTemplateColumns: "170px 1fr 50px" }}>
                 <span>{CATEGORY_LABEL[c.label] || c.label}</span>
-                <Meter value={c.f1} color="linear-gradient(90deg,#2f74e0,#62b0ff)" />
+                <Meter value={c.f1} color="var(--accent-grad)" />
                 <b>{c.f1.toFixed(2)}</b>
               </div>
             ))}
@@ -119,9 +119,9 @@ export default function AnalyticsPage() {
                 <YAxis {...axisProps()} width={40} />
                 <Tooltip {...tooltipProps()} labelFormatter={(v) => `Iteration ${v}`} formatter={(v) => v.toFixed(2)} />
                 <Legend wrapperStyle={{ fontSize: 12, color: cssVar("--text-2") }} />
-                <Line dataKey="plain" name="No fairness (α=0, β=0)" stroke="#f5a33b" strokeWidth={2} dot={false} />
-                <Line dataKey="fair" name="Fairness (α=0.5, β=1)" stroke="#3b8cf6" strokeWidth={2} dot={false} />
-                <Line dataKey="strong" name="Strong fairness (α=1, β=3)" stroke="#22c3a0" strokeWidth={2} dot={false} />
+                <Line dataKey="plain" name="No fairness (α=0, β=0)" stroke={cssVar("--series-4")} strokeWidth={2} dot={false} />
+                <Line dataKey="fair" name="Fairness (α=0.5, β=1)" stroke={cssVar("--series-1")} strokeWidth={2} dot={false} />
+                <Line dataKey="strong" name="Strong fairness (α=1, β=3)" stroke={cssVar("--series-2")} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
             <p className="note">The fairness settings add a reward for covering vulnerable districts, so their reward is on a higher
@@ -161,8 +161,8 @@ export default function AnalyticsPage() {
                   <XAxis dataKey="round" {...axisProps()} />
                   <YAxis domain={[0.5, 0.8]} tickFormatter={(v) => `${Math.round(v * 100)}%`} {...axisProps()} width={44} />
                   <Tooltip {...tooltipProps()} labelFormatter={(v) => `Round ${v}`} formatter={(v) => `${(v * 100).toFixed(1)}%`} />
-                  <Line dataKey="worst_district" name="Worst-off district" stroke="#22c3a0" strokeWidth={2} dot={false} />
-                  <Line dataKey="fulfilment" name="Demand met" stroke="#3b8cf6" strokeWidth={2} dot={false} />
+                  <Line dataKey="worst_district" name="Worst-off district" stroke={cssVar("--series-2")} strokeWidth={2} dot={false} />
+                  <Line dataKey="fulfilment" name="Demand met" stroke={cssVar("--series-1")} strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
               <div className="round-cards">

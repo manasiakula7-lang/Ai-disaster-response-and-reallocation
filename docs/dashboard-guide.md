@@ -2,7 +2,11 @@
 
 RESPONDA shows the August 2018 Kerala flood week (Day 1 = 18 Aug to Day 7 = 24 Aug) as a relief coordinator would see it, using the results of Steps 1-6 served by the backend (FastAPI + PostGIS).
 
-**Layout.** The sidebar on the left has the six pages. Each page has a big title at the top and, on the right, the **day picker**: changing the day updates every page that shows "today". On a phone the sidebar becomes a scrollable bar at the top.
+**Layout.** The sidebar on the left has the seven pages. Each page has a big title at the top and, on the right, the **day picker**: changing the day updates every page that shows "today". On a phone the sidebar becomes a scrollable bar at the top.
+
+**Colour themes.** Under **THEME** at the bottom of the sidebar you can switch between four colour schemes: **Navy** (default), **Ocean** (dark teal), **Graphite** (charcoal with violet) and **Daylight** (light, good for projectors and printing). The browser remembers your choice. Switching theme resets the page you are on, so pick it before starting a simulation.
+
+![The four themes](screenshots/0-themes.png)
 
 **Words used everywhere**
 
@@ -35,6 +39,9 @@ RESPONDA shows the August 2018 Kerala flood week (Day 1 = 18 Aug to Day 7 = 24 A
 - **Colour districts by:** flood priority class, severity score, or need met (how much of today's need the AI agents' plan ships; a pale district is being left behind).
 - **Day timeline with ▶ play:** steps through the week so you can watch the flood rise and fall.
 - **District status table:** every district's priority class, score, displaced people and how much of its need the plan covers that day.
+- **Event log:** everything the reallocation loop (Step 6) did that day in time order: real tweets, road changes, the four dispatch waves and the alerts they raised. The buttons filter by type (reports are hidden at first because there are many).
+
+![Event log](screenshots/2b-event-log.png)
 
 ## 3. GAT Network
 
@@ -68,7 +75,7 @@ Follows one crisis report from tweet to trucks.
 
 The allocation simulator: plays the whole flood week with two strategies on the same scenario.
 
-- **Scenario:** official week as it happened, supply shortage (half the stock), bigger flood (+50% demand), main roads cut (Alappuzha–Ernakulam and Ernakulam–Thrissur), or worst case (half stock and +50% demand).
+- **Scenario:** official week as it happened, supply shortage (half the stock), bigger flood (+50% demand), main roads cut (Alappuzha–Ernakulam and Ernakulam–Thrissur), worst case (half stock and +50% demand), or **Custom what-if**: set the stock (20-200%) and demand (50-250%) with sliders and click any roads to close them for the whole week.
 - **Strategy** and **Compare with:** any of AI agents, the three optimisers, greedy by severity, local-first. Default: AI agents vs optimiser + rationing.
 - **Cards:** demand met, worst-off district, fairness gap (Gini) and average delivery time, each with the difference from the comparison strategy.
 - **Delivered and unmet resources:** per resource, both strategies side by side.
@@ -77,6 +84,28 @@ The allocation simulator: plays the whole flood week with two strategies on the 
 - **Allocation summary** and **disaster event timeline:** what changed each day (demand surges, roads blocked, slowed or reopened) that both strategies had to replan around.
 
 ![District-level allocation](screenshots/5b-allocation-districts.png)
+
+![Custom what-if](screenshots/5c-custom-whatif.png)
+
+## 5b. Live Simulation (the seven-day simulation)
+
+![Live simulation](screenshots/8-simulation.png)
+
+Plays the official flood week one day at a time through the backend, like a real control room would.
+
+1. Pick a **strategy** and press **Start week**.
+2. Press **▶ Play day N** to run one day, or **⏭ Play to end** to run the rest of the week.
+3. While the week is running you can **close any road from today on** (a live what-if). Closed roads are listed under the buttons.
+
+What you see:
+- **Cards:** days played, demand met so far, worst-off district, fairness gap (Gini), all for the week up to now.
+- **Map:** the latest simulated day, districts coloured by how much of that day's need was delivered, with the day's shipments and road status.
+- **Day by day chart:** demand met and the worst-off district for each day played.
+- **Stock left in all centres:** how much food, water, medicine and rescue teams remain.
+- **Day-by-day results:** a row per day with need met, worst-off district, truckloads and average delay.
+- **District coverage today:** every district's share of need delivered on the latest day, lowest first.
+
+![Simulation results](screenshots/8b-simulation-results.png)
 
 ## 6. Model Analytics
 

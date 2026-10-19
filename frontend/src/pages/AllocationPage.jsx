@@ -11,6 +11,7 @@ const SCENARIOS = [
   { key: "surge", label: "Bigger flood: 50% more demand", body: { demand_factor: 1.5 } },
   { key: "roads", label: "Main roads cut: Alappuzha–Ernakulam and Ernakulam–Thrissur", body: { closed_edges: [0, 6] } },
   { key: "worst", label: "Worst case: half the stock and 50% more demand", body: { stock_factor: 0.5, demand_factor: 1.5 } },
+  { key: "custom", label: "Custom what-if: set stock, demand and roads yourself", body: null },
 ];
 const NAME = Object.fromEntries(STRATEGIES);
 const SHORT = { mappo: "AI agents", lp_rationed: "Optimiser + rationing", lp_fair: "Optimiser (fair)", lp: "Optimiser (max)", greedy: "Greedy", local_first: "Local-first" };
@@ -19,14 +20,15 @@ function Bars({ a, b, la, lb }) {
   const ra = a.demand ? a.delivered / a.demand : 1, rb = b.demand ? b.delivered / b.demand : 1;
   return (
     <>
-      <div className="bar-row"><span>{la}</span><Meter value={ra} color="linear-gradient(90deg,#2f74e0,#62b0ff)" /><b>{pct(ra, 1)}</b></div>
-      <div className="bar-row"><span>{lb}</span><Meter value={rb} color="linear-gradient(90deg,#14957a,#22c3a0)" /><b>{pct(rb, 1)}</b></div>
+      <div className="bar-row"><span>{la}</span><Meter value={ra} color="var(--accent-grad)" /><b>{pct(ra, 1)}</b></div>
+      <div className="bar-row"><span>{lb}</span><Meter value={rb} color="var(--teal-grad)" /><b>{pct(rb, 1)}</b></div>
     </>
   );
 }
 
-export default function AllocationPage() {
+export default function AllocationPage({ roads }) {
   const [scenario, setScenario] = useState("official");
+  const [custom, setCustom] = useState({ stock: 100, demand: 100, closed: [] });
   const [policy, setPolicy] = useState("mappo");
   const [baseline, setBaseline] = useState("lp");
   const [res, setRes] = useState(null);
@@ -38,7 +40,8 @@ export default function AllocationPage() {
   const run = async () => {
     setBusy(true); setErr(null);
     try {
-      const body = SCENARIOS.find((s) => s.key === scenario).body;
+      const body = SCENARIOS.find((s) => s.key === scenario).body
+        || { stock_factor: custom.stock / 100, demand_factor: custom.demand / 100, closed_edges: custom.closed };
       setRes(await api.evaluate({ policy, baseline, ...body }));
     } catch (e) { setErr(String(e)); } finally { setBusy(false); }
   };
@@ -86,6 +89,33 @@ export default function AllocationPage() {
             </label>
             <button className="btn" onClick={run} disabled={busy}>{busy ? <><span className="spinner" />Running…</> : "Run simulation"}</button>
           </div>
+          {scenario === "custom" && (
+            <div style={{ marginTop: 18 }}>
+              <div className="grid-2 even" style={{ gap: 24, marginBottom: 14 }}>
+                <label className="field">Stock in the centres: {custom.stock}%
+                  <input type="range" min="20" max="200" step="10" value={custom.stock}
+                    onChange={(e) => setCustom({ ...custom, stock: Number(e.target.value) })} />
+                </label>
+                <label className="field">Demand (flood size): {custom.demand}%
+                  <input type="range" min="50" max="250" step="10" value={custom.demand}
+                    onChange={(e) => setCustom({ ...custom, demand: Number(e.target.value) })} />
+                </label>
+              </div>
+              <div className="field" style={{ marginBottom: 8 }}>Close roads for the whole week</div>
+              <div className="chips">
+                {roads?.features.map((f) => {
+                  const id = f.properties.edge_id, on = custom.closed.includes(id);
+                  return (
+                    <button key={id} className={`chip ${on ? "on" : ""}`} aria-pressed={on}
+                      style={on ? { borderColor: "var(--high)" } : undefined}
+                      onClick={() => setCustom({ ...custom, closed: on ? custom.closed.filter((x) => x !== id) : [...custom.closed, id] })}>
+                      {on ? "✕ " : ""}{f.properties.source} – {f.properties.target}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {err && <p className="error-box" style={{ marginTop: 14 }}>{err}</p>}
         </Card>
 
@@ -101,8 +131,8 @@ export default function AllocationPage() {
             <Card eyebrow="Model performance" title={`${NAME[res.policy]} vs ${NAME[res.baseline]}`}
               subtitle="Share of each resource's demand delivered over the week, same scenario for both.">
               <div className="legend-row">
-                <span><span className="dot" style={{ background: "#3b8cf6" }} />{SHORT[res.policy]}</span>
-                <span><span className="dot" style={{ background: "#22c3a0" }} />{SHORT[res.baseline]}</span>
+                <span><span className="dot" style={{ background: "var(--series-1)" }} />{SHORT[res.policy]}</span>
+                <span><span className="dot" style={{ background: "var(--series-2)" }} />{SHORT[res.baseline]}</span>
               </div>
               <div className="grid-2 even" style={{ gap: 14 }}>
                 {RESOURCES.map((r) => (
@@ -121,8 +151,8 @@ export default function AllocationPage() {
                   <YAxis domain={[0, 1]} tickFormatter={(v) => `${Math.round(v * 100)}%`} {...axisProps()} width={44} />
                   <Tooltip {...tooltipProps()} formatter={(v) => `${(v * 100).toFixed(1)}%`} />
                   <Legend wrapperStyle={{ fontSize: 12, color: cssVar("--text-2") }} />
-                  <Line dataKey="a" name={SHORT[res.policy]} stroke="#3b8cf6" strokeWidth={2} dot={{ r: 4 }} />
-                  <Line dataKey="b" name={SHORT[res.baseline]} stroke="#22c3a0" strokeWidth={2} dot={{ r: 4 }} />
+                  <Line dataKey="a" name={SHORT[res.policy]} stroke={cssVar("--series-1")} strokeWidth={2} dot={{ r: 4 }} />
+                  <Line dataKey="b" name={SHORT[res.baseline]} stroke={cssVar("--series-2")} strokeWidth={2} dot={{ r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
             </Card>
@@ -148,7 +178,7 @@ export default function AllocationPage() {
                   <div className="dist-card" key={x.d}>
                     <div className="head"><b>{x.d}</b><span>Vulnerability {x.vuln.toFixed(2)}</span></div>
                     <div className="val">
-                      <Meter value={x.cov} color={x.cov < 0.5 ? "var(--high)" : x.cov < 0.7 ? "var(--medium)" : "linear-gradient(90deg,#14957a,#22c3a0)"} />
+                      <Meter value={x.cov} color={x.cov < 0.5 ? "var(--high)" : x.cov < 0.7 ? "var(--medium)" : "var(--teal-grad)"} />
                       <b>{pct(x.cov, 1)}</b>
                     </div>
                     {resource !== "all" && <div className="sub">{fmt(x.got)} / {fmt(x.tot)} {RESOURCE_UNIT[resource]} · {fmt(x.tot - x.got)} unmet</div>}
@@ -166,7 +196,7 @@ export default function AllocationPage() {
                     <div className="sum-card" key={r}>
                       <div className="k">{RESOURCE_SHORT[r]}</div>
                       <div className="v">{fmt(r === "water_litres" ? x.delivered / 1000 : x.delivered, r === "rescue_teams" ? 1 : 0)}<small>{r === "water_litres" ? "k litres" : RESOURCE_UNIT[r]}</small></div>
-                      <Meter value={s} color="linear-gradient(90deg,#2f74e0,#62b0ff)" thin />
+                      <Meter value={s} color="var(--accent-grad)" thin />
                       <div className="s">{fmt(r === "water_litres" ? (x.demand - x.delivered) / 1000 : x.demand - x.delivered)}{r === "water_litres" ? "k" : ""} unmet · {pct(s, 1)} satisfied</div>
                     </div>
                   );
