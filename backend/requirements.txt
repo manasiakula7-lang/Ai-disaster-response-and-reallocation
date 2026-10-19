@@ -1,0 +1,16 @@
+# Just what the backend needs (lighter than the full requirements.txt)
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg[binary]
+geoalchemy2
+geopandas
+shapely
+pyproj
+pandas
+numpy
+networkx
+ortools
+torch
+pytest
+httpx
