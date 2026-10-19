@@ -397,6 +397,8 @@ table.t td.num, table.t th.num { text-align: right; }
 .mapbox.tall { height: 640px; }
 .map { position: absolute; inset: 0; background: var(--map-bg); }
 .leaflet-container { background: var(--map-bg); font: inherit; }
+/* OSM tiles are light; turn them into a dark street map for the dark themes */
+:root:not([data-theme="light"]) .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.82) contrast(0.9) saturate(0.6); }
 .leaflet-tooltip {
   background: var(--card-2); color: var(--text); border: 1px solid var(--border-strong); border-radius: 10px;
   box-shadow: var(--shadow); font-size: 12px;
@@ -561,3 +563,6 @@ button.feed-item.log:hover { border-color: var(--border-strong); }
 .feed-item .top .tag { font-size: 11px; padding: 1px 8px; }
 table.t tr.hl td { background: var(--accent-soft); }
 .btn .icon, .btn svg { vertical-align: -2px; }
+
+.link-btn { border: 0; background: none; padding: 0; color: var(--accent-2); font-weight: 600; cursor: pointer; font-size: inherit; }
+.link-btn:hover { text-decoration: underline; }

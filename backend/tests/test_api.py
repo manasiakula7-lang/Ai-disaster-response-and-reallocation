@@ -129,3 +129,12 @@ def test_live_week_matches_step6():
     sid = client.post("/live", json={}).json()["state"]["session_id"]
     st = client.post(f"/live/{sid}/advance", json={"hours": 200}).json()["state"]
     assert st["done"] and st["metrics"]["fulfilment"] == pytest.approx(0.5831, abs=1e-3)
+
+
+def test_route_avoids_blocked_road():
+    r = client.get("/route", params={"district": "Alappuzha", "day": 3, "centre": "RC01"}).json()
+    assert r["reachable"] and r["normal_path"] == ["Ernakulam", "Alappuzha"]
+    assert r["path"][0] == "Ernakulam" and r["path"][-1] == "Alappuzha" and len(r["path"]) > 2
+    assert all(l["status"] != "blocked" for l in r["legs"]) and r["hours"] > r["normal_hours"]
+    best = client.get("/route", params={"district": "Alappuzha", "day": 3}).json()
+    assert best["centre"]["district"] == "Alappuzha" and best["hours"] == 1.0

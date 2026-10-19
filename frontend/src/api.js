@@ -35,6 +35,16 @@ export const api = {
   decisions: (day) => request(`/decisions?${qs({ day })}`),
   decision: (id) => request(`/decision/${id}`),
   evaluate: (body) => request("/evaluate", { method: "POST", body: JSON.stringify(body) }),
+  route: (params) => request(`/route?${qs(params)}`),
+  // Street-level geometry through the given waypoints ([lat, lon]) from the public OSRM router (no key).
+  streets: async (waypoints) => {
+    const pts = waypoints.map(([lat, lon]) => `${lon.toFixed(5)},${lat.toFixed(5)}`).join(";");
+    const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${pts}?overview=full&geometries=geojson`);
+    if (!res.ok) throw new Error(`router ${res.status}`);
+    const r = (await res.json()).routes?.[0];
+    if (!r) throw new Error("no route");
+    return { coords: r.geometry.coordinates.map(([lon, lat]) => [lat, lon]), km: r.distance / 1000, hours: r.duration / 3600 };
+  },
   liveStart: (policy) => request("/live", { method: "POST", body: JSON.stringify({ policy }) }),
   liveState: (id, since = 0) => request(`/live/${id}?${qs({ since })}`),
   liveAdvance: (id, body) => request(`/live/${id}/advance`, { method: "POST", body: JSON.stringify(body) }),

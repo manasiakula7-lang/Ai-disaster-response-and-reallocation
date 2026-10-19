@@ -43,6 +43,11 @@ RESPONDA shows the August 2018 Kerala flood week (Day 1 = 18 Aug to Day 7 = 24 A
 
 ![Event log](screenshots/2b-event-log.png)
 
+- **Route planner (rescue routing):** choose a destination district and either a specific relief centre or "Fastest centre that has…" a resource (rescue teams by default). It finds the fastest route that is open on the chosen day over the district road network: blocked roads are skipped, slowed roads count at their flood travel time, plus about 1 hour of local delivery. You get the centre to send from, travel time today vs on normal roads, distance, the districts crossed, a table of road links with their status, a note when the usual route is cut and a detour is used, and the next fastest centres. The map draws the route along real streets using the free OpenStreetMap router (OSRM, no key needed); if that router can't be reached, it is drawn as straight lines between district HQs. Changing the day re-plans it. You can also open it from **Decision Support** ("Show route on map" on any shipment) and **Live Operations** ("Plan rescue route").
+- *Limit:* flood closures are known per district-to-district road link (Step 6 road events), so the planner avoids a whole flooded link; the street-level path inside a link comes from normal OpenStreetMap roads and doesn't know which individual streets are under water.
+
+![Route planner](screenshots/2c-route-planner.png)
+
 ## 3. GAT Network
 
 ![GAT network](screenshots/3-network.png)
@@ -146,4 +151,4 @@ What you see:
 
 ---
 
-*Screenshots were taken without map tiles (not reachable from the build machine); with internet the street map shows under the districts.*
+*The base map is OpenStreetMap (no API key; dimmed automatically in the dark themes). Screenshots were taken without map tiles or the street router (not reachable from the build machine); with internet the street map shows under the districts and routes follow the streets.*

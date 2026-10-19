@@ -48,6 +48,7 @@ To use a different database, set `DATABASE_URL`, e.g. `postgresql+psycopg://user
 | `GET /centres` | GeoJSON relief-centre markers |
 | `GET /centres/nearest?lat=&lon=&k=3` | Nearest centres with distance in km (PostGIS geography distance) |
 | `GET /roads?day=3` | GeoJSON road links with that day's status (open / slowed / blocked) |
+| `GET /route?district=Alappuzha&day=3&need=rescue_teams` | Fastest open route to a district that day from the quickest centre holding that resource (or `centre=RC06`): legs with status and time, normal-roads time for comparison, blocked links, waypoints, next 3 alternative centres |
 | `GET /demand`, `GET /severity` | Demand and severity tables, filter by `day` / `district` |
 | `GET /reports?district=&date=&actionable=true` | Crisis tweets, most urgent first |
 | `GET /events?day=&type=`, `GET /alerts` | Step 6 event log and alerts |
@@ -79,6 +80,6 @@ Sessions are kept in memory (enough for a demo; they're lost when the server res
 
 A live session is the Step 6 loop (`ml/realloc/loop.py`) run event by event: played to the end without typed reports it reproduces the Step 6 official result exactly (one of the tests).
 
-**Tests:** `python -m pytest backend/tests -q` (17 tests).
+**Tests:** `python -m pytest backend/tests -q` (18 tests).
 
 **Checked:** the API's simulation reproduces the Step 3 result exactly (LP max coverage, 67.8%). It's one of the tests.

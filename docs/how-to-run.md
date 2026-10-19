@@ -76,7 +76,7 @@ python -m backend.app.load
 
 You should see a table count ending with lines like `roads 21` and `severity 364`. That's every district map, centre, tweet and result from Steps 0-6, now in PostGIS.
 
-**Optional check:** `python -m pytest backend\tests -q` should print `17 passed`.
+**Optional check:** `python -m pytest backend\tests -q` should print `18 passed`.
 
 ### Step 7. Install the dashboard
 

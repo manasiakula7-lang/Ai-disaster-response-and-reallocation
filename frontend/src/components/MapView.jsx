@@ -11,12 +11,9 @@ import { cssVar } from "../theme.js";
 const fmt = (v, d = 0) => (v == null ? "–" : Number(v).toLocaleString("en-IN", { maximumFractionDigits: d }));
 const pct = (v) => (v == null ? "–" : `${Math.round(v * 100)}%`);
 
-// CARTO base maps (OpenStreetMap data, no key needed): dark streets for the dark themes, light for Daylight.
-// (The "rastertiles/voyager" style now asks for an API key, so it is not used.)
-const TILES = {
-  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-  light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-};
+// OpenStreetMap's own tiles: free, no API key (CARTO's tiles now ask for one). The dark themes
+// darken them with a CSS filter (styles.css, .leaflet-tile-pane).
+const TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 // Zoom to Kerala once the district shapes arrive.
 function FitBounds({ data }) {
@@ -34,9 +31,16 @@ function FitBounds({ data }) {
   return null;
 }
 
+// Zoom to a planned route.
+function FitRoute({ coords }) {
+  const map = useMap();
+  useEffect(() => { map.fitBounds(L.latLngBounds(coords), { padding: [40, 40], maxZoom: 10 }); }, [coords, map]);
+  return null;
+}
+
 // colorMode: "class" (high / moderate / low), "severity" (score ramp) or "coverage" (share of need met)
 export default function MapView({
-  districts, centres, roads, flows, colorMode = "class", coverage, layers, dayKey, tall, onPick, highlight,
+  districts, centres, roads, flows, colorMode = "class", coverage, layers, dayKey, tall, onPick, highlight, route,
 }) {
   const fill = (p) => colorMode === "coverage" ? coverageColor(coverage?.[p.name])
     : colorMode === "severity" ? severityColor(p.severity) : CLASS_COLOR[p.severity_class] || "#888";
@@ -47,8 +51,8 @@ export default function MapView({
       <MapContainer className="map" center={[10.45, 76.35]} zoom={7} minZoom={6} zoomSnap={0.25} zoomDelta={0.5}
         scrollWheelZoom>
         {layers.basemap && (
-          <TileLayer subdomains="abcd" url={document.documentElement.dataset.theme === "light" ? TILES.light : TILES.dark}
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' />
+          <TileLayer url={TILES} maxZoom={19}
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
         )}
         <FitBounds data={districts} />
         {districts && (
@@ -117,6 +121,26 @@ export default function MapView({
             </CircleMarker>
           );
         })}
+        {route?.coords?.length > 1 && (
+          <React.Fragment key={`route-${route.key}`}>
+            <FitRoute coords={route.coords} />
+            <Polyline positions={route.coords} interactive={false}
+              pathOptions={{ color: cssVar("--accent-2"), weight: 14, opacity: 0.25, lineCap: "round" }} />
+            <Polyline positions={route.coords}
+              pathOptions={{ color: cssVar("--accent"), weight: 5, opacity: 1, lineCap: "round", lineJoin: "round",
+                dashArray: route.estimated ? "10 8" : null }}>
+              <Tooltip sticky>{route.label}</Tooltip>
+            </Polyline>
+            <CircleMarker center={route.coords[0]} radius={9}
+              pathOptions={{ color: "#ffffff", weight: 3, fillColor: cssVar("--teal"), fillOpacity: 1 }}>
+              <Tooltip>Start: {route.from}</Tooltip>
+            </CircleMarker>
+            <CircleMarker center={route.coords[route.coords.length - 1]} radius={9}
+              pathOptions={{ color: "#ffffff", weight: 3, fillColor: cssVar("--high"), fillOpacity: 1 }}>
+              <Tooltip>Destination: {route.to}</Tooltip>
+            </CircleMarker>
+          </React.Fragment>
+        )}
       </MapContainer>
 
       {colorMode !== "class" && (

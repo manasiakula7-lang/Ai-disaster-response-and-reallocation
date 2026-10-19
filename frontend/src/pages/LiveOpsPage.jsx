@@ -51,7 +51,7 @@ function ChangeList({ replan }) {
   );
 }
 
-export default function LiveOpsPage({ centres, go }) {
+export default function LiveOpsPage({ centres, go, setDay }) {
   const [policy, setPolicy] = useState("mappo");
   const [st, setSt] = useState(null);
   const [events, setEvents] = useState([]);
@@ -242,7 +242,10 @@ export default function LiveOpsPage({ centres, go }) {
           <Card eyebrow={focus ? `${focus.type === "manual" ? "Field report" : focus.type.startsWith("road_") ? "Road change" : "Tweet"} · Day ${focus.day} ${focus.time}` : "Reallocation"}
             title="How the plan changed"
             subtitle={focus?.replan ? `Shipments planned for the ${focus.replan.wave} wave, just before and just after this event.` : undefined}
-            right={focus?.type === "report" && focus.tweet_id && <button className="chip" onClick={() => go("decision", { tweet: focus.tweet_id })}>Open in Decision Support</button>}>
+            right={<div className="chips">
+              {focus?.district && <button className="chip" onClick={() => { setDay(focus.day); go("gis", { route_to: focus.district }); }}>Plan rescue route</button>}
+              {focus?.type === "report" && focus.tweet_id && <button className="chip" onClick={() => go("decision", { tweet: focus.tweet_id })}>Open in Decision Support</button>}
+            </div>}>
             {focus && <p className="note" style={{ marginTop: 0 }}>“{focus.detail.slice(0, 220)}”</p>}
             <ChangeList replan={focus?.replan} />
           </Card>

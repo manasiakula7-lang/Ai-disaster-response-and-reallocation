@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { CLASS_LABEL, DAYS, dayDate } from "../constants.js";
 import Icon from "../components/icons.jsx";
 import MapView from "../components/MapView.jsx";
+import RoutePlanner from "../components/RoutePlanner.jsx";
 import { Card, DayPicker, Meter, PageHead, fmt, pct } from "../components/ui.jsx";
 import { CLASS_COLOR } from "../constants.js";
 
@@ -45,7 +46,8 @@ function EventLog({ events }) {
   );
 }
 
-export default function GisPage({ day, setDay, districts, centres, roads, plan, events }) {
+export default function GisPage({ day, setDay, districts, centres, roads, plan, events, params }) {
+  const [route, setRoute] = useState(null);
   const [layers, setLayers] = useState({ basemap: true, roads: true, centres: true, flows: true });
   const [mode, setMode] = useState("class");
   const [playing, setPlaying] = useState(false);
@@ -86,7 +88,7 @@ export default function GisPage({ day, setDay, districts, centres, roads, plan, 
             </div>
           )}
           <MapView districts={districts} centres={centres} roads={roads} flows={plan?.flows} coverage={plan?.coverage}
-            layers={layers} colorMode={mode} dayKey={day} tall />
+            layers={layers} colorMode={mode} dayKey={day} tall route={route} />
           <div className="timeline" style={{ marginTop: 16 }}>
             <button className="play" onClick={() => setPlaying(!playing)} aria-label={playing ? "Pause" : "Play the week"}
               title={playing ? "Pause" : "Play the week"}>
@@ -101,6 +103,9 @@ export default function GisPage({ day, setDay, districts, centres, roads, plan, 
             </div>
           </div>
         </Card>
+
+        <RoutePlanner day={day} districts={districts} centres={centres} setRoute={setRoute}
+          preset={params?.route_to ? { district: params.route_to, centre: params.centre } : null} />
 
         <Card eyebrow="District status" title="Priority and planned coverage"
           subtitle="Flood priority is the GAT severity score. Need met is the share of today's need the AI agents' plan ships.">

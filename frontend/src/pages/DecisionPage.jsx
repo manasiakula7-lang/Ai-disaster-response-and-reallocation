@@ -25,7 +25,7 @@ function byCentre(shipments) {
   return Object.values(out).sort((a, b) => (a.travel_time_hr ?? 99) - (b.travel_time_hr ?? 99));
 }
 
-export default function DecisionPage({ day, setDay, reports, districts, params }) {
+export default function DecisionPage({ day, setDay, reports, districts, params, go }) {
   const [id, setId] = useState(params.tweet || null);
   const [d, setD] = useState(null);
   const [err, setErr] = useState(null);
@@ -131,7 +131,8 @@ export default function DecisionPage({ day, setDay, reports, districts, params }
                           </span>
                         ))}
                       </div>
-                      <p>{c.centre_name}{c.hops === 0 ? "" : `, ${c.centre_district}`}. Fastest open route today.</p>
+                      <p>{c.centre_name}{c.hops === 0 ? "" : `, ${c.centre_district}`}. Fastest open route today.{" "}
+                        <button className="link-btn" onClick={() => go("gis", { route_to: rep.district, centre: c.centre })}>Show route on map →</button></p>
                     </div>
                   ))}
                 </div>

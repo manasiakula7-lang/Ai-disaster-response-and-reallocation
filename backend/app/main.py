@@ -5,6 +5,7 @@ Run from the repo root:
 Interactive docs: http://localhost:8000/docs
 """
 import json
+from collections import defaultdict
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query
@@ -410,3 +411,94 @@ def live_report(session_id: str, req: LiveReport):
 @app.post("/analyse", summary="Run the Step 1 NLP on one message (no plan change)")
 def analyse_text(req: LiveReport):
     return live.analyse(req.text, req.district)
+
+
+# ---------------------------------------------------------------- route planning
+LOCAL_HR = 1.0     # same as the simulator: delivery inside the centre's own district
+
+
+def _shortest(rows, src, dst, use_state=True):
+    """Dijkstra over the district road links. use_state=False ignores the flood (normal roads)."""
+    import heapq
+    adj = defaultdict(list)
+    for r in rows:
+        if use_state and r["status"] == "blocked":
+            continue
+        t = r["current_travel_time_hr"] if use_state else r["travel_time_hr"]
+        adj[r["source"]].append((r["target"], t, r)); adj[r["target"]].append((r["source"], t, r))
+    best, prev, heap = {src: 0.0}, {}, [(0.0, src)]
+    while heap:
+        t, u = heapq.heappop(heap)
+        if u == dst:
+            break
+        if t > best[u]:
+            continue
+        for v, w, r in adj[u]:
+            if t + w < best.get(v, float("inf")):
+                best[v], prev[v] = t + w, (u, r)
+                heapq.heappush(heap, (t + w, v))
+    if dst not in best:
+        return None
+    legs, node = [], dst
+    while node != src:
+        u, r = prev[node]
+        legs.append({"edge_id": r["edge_id"], "from": u, "to": node, "status": r["status"] if use_state else "open",
+                     "hours": round(r["current_travel_time_hr"] if use_state else r["travel_time_hr"], 2),
+                     "normal_hours": round(r["travel_time_hr"], 2), "km": r["distance_km"]})
+        node = u
+    return list(reversed(legs))
+
+
+@app.get("/route", summary="Fastest open route from a relief centre to a district on a given day")
+def route(district: str, day: int = Query(3, ge=1, le=7), centre: Optional[str] = None,
+          need: str = Query("rescue_teams", description="when no centre is given, pick the fastest one that has this"),
+          db: DBSession = Depends(get_db)):
+    """Picks the centre (if not given) and the fastest route over today's road network: blocked links are
+    avoided and slowed links count at their slowed travel time. Waypoints are the district HQs on the way,
+    so the map can draw the route along real streets."""
+    rows = roads(day=day, db=db)["features"]
+    rows = [f["properties"] | {"edge_id": f["properties"]["edge_id"]} for f in rows]
+    dists = {d["name"]: d for d in (f["properties"] for f in districts(day=day, simplify=0.01, db=db)["features"])}
+    if district not in dists:
+        raise HTTPException(404, f"unknown district {district}")
+    cs = {c["properties"]["centre_id"]: c for c in centres(db=db)["features"]}
+    options = []
+    for cid, c in cs.items():
+        p = c["properties"]
+        if centre and cid != centre:
+            continue
+        if not centre and need in p and not p[need]:
+            continue
+        legs = [] if p["district"] == district else _shortest(rows, p["district"], district)
+        if legs is None:
+            options.append({"centre_id": cid, "reachable": False})
+            continue
+        options.append({"centre_id": cid, "reachable": True, "legs": legs,
+                        "hours": round(LOCAL_HR + sum(x["hours"] for x in legs), 2)})
+    if centre and centre not in cs:
+        raise HTTPException(404, f"unknown centre {centre}")
+    reach = sorted((o for o in options if o["reachable"]), key=lambda o: o["hours"])
+    if not reach:
+        return {"reachable": False, "district": district, "day": day, "centre": centre,
+                "detail": f"No open road reaches {district} from {'this centre' if centre else 'any centre'} today."}
+    best = reach[0]
+    c = cs[best["centre_id"]]
+    p = c["properties"]
+    normal = [] if p["district"] == district else _shortest(rows, p["district"], district, use_state=False)
+    normal_hours = round(LOCAL_HR + sum(x["hours"] for x in normal), 2)
+    hq = lambda d: [dists[d]["hq_lat"], dists[d]["hq_lon"]]
+    lon, lat = c["geometry"]["coordinates"]
+    waypoints = [[lat, lon]] + [hq(x["to"]) for x in best["legs"]]
+    if not best["legs"]:
+        waypoints.append(hq(district))
+    avoided = [r for r in rows if r["status"] == "blocked"]
+    return {"reachable": True, "day": day, "district": district,
+            "centre": {"centre_id": best["centre_id"], "name": p["name"], "district": p["district"],
+                       "rescue_teams": p["rescue_teams"], "vehicles": p["vehicles"]},
+            "legs": best["legs"], "hours": best["hours"], "normal_hours": normal_hours,
+            "normal_path": [normal[0]["from"]] + [x["to"] for x in normal] if normal else [p["district"]],
+            "path": [p["district"]] + [x["to"] for x in best["legs"]],
+            "km": round(sum(x["km"] for x in best["legs"]), 1), "waypoints": waypoints,
+            "blocked_today": [f"{r['source']} – {r['target']}" for r in avoided],
+            "alternatives": [{"centre_id": o["centre_id"], "name": cs[o["centre_id"]]["properties"]["name"],
+                              "hours": o["hours"]} for o in reach[1:4]]}
