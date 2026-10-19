@@ -13,9 +13,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.orm import Session as DBSession
 
-from backend.app import sim
+from backend.app import insights, sim
 from backend.app.db import get_db
-from backend.app.models import Allocation
+from backend.app.models import Allocation, Artifact
 
 app = FastAPI(title="AI Disaster Response API",
               description="Kerala 2018 floods: districts, relief centres, roads, demand, "
@@ -230,3 +230,106 @@ def simulate_close_road(session_id: str, body: CloseRoad):
 def whatif(req: SimRequest):
     _check(req)
     return sim.what_if(req.policy, req.seed, req.closed_edges, req.stock_factor, req.demand_factor)
+
+
+# ------------------------------------------------------------ dashboard pages
+def _artifact(db, key):
+    a = db.get(Artifact, key)
+    if a is None:
+        raise HTTPException(503, f"'{key}' not loaded; run python -m backend.app.load")
+    return a.data
+
+
+def _road_changes(db, upto_day):
+    return q(db, """SELECT r.edge_id, r.status, r.travel_time_hr FROM road_events r
+                    WHERE r.day <= :day ORDER BY r.day, r.id""", day=upto_day)
+
+
+@app.get("/graph", summary="District graph for a day: GAT severity, embeddings, attention, road status, centres")
+def graph(day: int = Query(3, ge=1, le=7), db: DBSession = Depends(get_db)):
+    g = _artifact(db, "graph")
+    sev = {r["district"]: r for r in severity(day, None, db)}
+    status = {}
+    for e in _road_changes(db, day):
+        status[e["edge_id"]] = e["status"]
+    att = g["attention"].get(str(day), {})
+    emb = g["embeddings"].get(str(day), {})
+    hosts = {}
+    for c in g["centres"]:
+        hosts.setdefault(c["district"], []).append(c["centre_id"])
+    nodes = [n | {"severity": sev[n["district"]]["severity"], "severity_class": sev[n["district"]]["severity_class"],
+                  "embedding": emb.get(n["district"]), "centres": hosts.get(n["district"], [])} for n in g["nodes"]]
+    edges = [e | {"status": status.get(e["edge_id"], "open"),
+                  "attention": round((att.get(f"{e['source']}|{e['target']}", 0) +
+                                      att.get(f"{e['target']}|{e['source']}", 0)) / 2, 4)} for e in g["edges"]]
+    return {"day": day, "nodes": nodes, "edges": edges, "centres": g["centres"]}
+
+
+@app.get("/analytics", summary="Model results for Steps 1-6 (NLP, GAT, MAPPO, federated learning)")
+def analytics(db: DBSession = Depends(get_db)):
+    return _artifact(db, "analytics")
+
+
+@app.get("/decisions", summary="Crisis reports the reallocation loop acted on (Step 6), newest first per day")
+def decisions(day: Optional[int] = Day, db: DBSession = Depends(get_db)):
+    return q(db, """SELECT e.day, e.time, e.district, r.tweet_id, r.category, r.confidence, r.urgency,
+                           r.resources, r.text
+                    FROM events e JOIN reports r ON r.tweet_id = e.tweet_id
+                    WHERE e.run_id = 'step6' AND e.type = 'report' AND (CAST(:day AS INTEGER) IS NULL OR e.day = :day)
+                    ORDER BY e.day, r.urgency DESC""", day=day)
+
+
+@app.get("/decision/{tweet_id}", summary="Why the system sent what it sent after one crisis report")
+def decision(tweet_id: str, db: DBSession = Depends(get_db)):
+    found = q(db, """SELECT e.day, e.time, e.district, r.* FROM events e JOIN reports r ON r.tweet_id = e.tweet_id
+                     WHERE e.run_id = 'step6' AND e.type = 'report' AND e.tweet_id = :t""", t=tweet_id)
+    if not found:
+        raise HTTPException(404, "report not used by the reallocation loop")
+    rep = found[0]
+    day, dist = rep["day"], rep["district"]
+    wave = insights.next_wave(rep["time"])
+    asked = insights.report_resources(rep["resources"] or "")
+    sev = next(r for r in severity(day, None, db) if r["district"] == dist)
+    dem = demand(day, dist, db)[0]
+    wave_ship = q(db, """SELECT centre, resource, round(sum(amount)::numeric, 1)::float AS amount FROM allocations
+                         WHERE run_id = 'step6' AND day = :d AND wave = :w AND district = :dist
+                         GROUP BY centre, resource ORDER BY centre, resource""", d=day, w=wave, dist=dist)
+    # drop rounding dust: less than a tenth of a truckload (or of a rescue team)
+    wave_ship = [s for s in wave_ship if s["amount"] >= insights.MIN_SHIPMENT[s["resource"]]]
+    day_ship = {r["resource"]: r["amount"] for r in allocations(day, None, "step6", "district", db)
+                if r["district"] == dist}
+    g = _artifact(db, "graph")
+    edges = g["edges"]
+    reach = insights.travel(edges, _road_changes(db, day), dist)
+    home = {c["centre_id"]: c for c in g["centres"]}
+    for s in wave_ship:
+        c = home[s["centre"]]
+        t, hops = reach.get(c["district"], (None, None))
+        s |= {"centre_name": c["name"], "centre_district": c["district"],
+              "travel_time_hr": None if t is None else round(t, 2), "hops": hops}
+    per_d = _artifact(db, "analytics")["per_district"]
+    compare = {name: v.get(dist) for name, v in per_d.items()}
+    alerts_after = [e for e in events(day, "alert", "step6", db) if e["district"] == dist and e["time"] >= rep["time"]]
+    return {"report": rep | {"text": insights.clean_text(rep["text"])}, "wave": wave, "asked": asked,
+            "severity": sev, "demand": dem,
+            "planned_today": {r: day_ship.get(r, 0.0) for r in sim.RESOURCES},
+            "shipments": wave_ship, "week_coverage_by_policy": compare, "alerts": alerts_after,
+            "neighbours": sorted({e["target"] if e["source"] == dist else e["source"]
+                                  for e in edges if dist in (e["source"], e["target"])})}
+
+
+class EvalRequest(BaseModel):
+    policy: str = Field("mappo", description="|".join(sim.POLICIES))
+    baseline: str = Field("lp_rationed", description="|".join(sim.POLICIES))
+    closed_edges: list[int] = []
+    stock_factor: float = Field(1.0, gt=0, le=5)
+    demand_factor: float = Field(1.0, gt=0, le=5)
+
+
+@app.post("/evaluate", summary="Play the week with a strategy and a baseline: totals per resource, district and day")
+def evaluate(req: EvalRequest):
+    for p in (req.policy, req.baseline):
+        if p not in sim.POLICIES:
+            raise HTTPException(422, f"policy must be one of {list(sim.POLICIES)}")
+    return insights.evaluate(sim.Session, req.policy, req.baseline, req.closed_edges,
+                             req.stock_factor, req.demand_factor)

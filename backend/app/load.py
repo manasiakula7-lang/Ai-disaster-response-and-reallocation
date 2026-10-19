@@ -14,7 +14,8 @@ from shapely.geometry import LineString, MultiPolygon, Point
 from sqlalchemy import text
 
 from backend.app.db import SessionLocal, engine
-from backend.app.models import (Allocation, Base, Centre, Demand, District, Event, Metric, Report,
+from backend.app.insights import build_artifacts
+from backend.app.models import (Allocation, Artifact, Base, Centre, Demand, District, Event, Metric, Report,
                                 Road, RoadEvent, Severity)
 from ml.env.relief_env import ROOT, SEVERITY_START_DAY
 
@@ -103,6 +104,8 @@ def main():
             db.add(Metric(step=step, policy=r.get("policy") or r.get("model"),
                           evaluation=evaluation or r["evaluation"],
                           **{k: float(r[k]) for k in METRIC_KEYS}))
+    for key, data in build_artifacts().items():
+        db.add(Artifact(key=key, data=data))
     db.commit()
     for t in Base.metadata.sorted_tables:
         print(f"{t.name:<14} {db.execute(text(f'SELECT count(*) FROM {t.name}')).scalar()}")

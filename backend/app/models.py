@@ -1,6 +1,6 @@
 """Database tables. Geometries are stored in WGS84 (SRID 4326) with PostGIS."""
 from geoalchemy2 import Geometry
-from sqlalchemy import Column, Float, Integer, String, Text
+from sqlalchemy import JSON, Column, Float, Integer, String, Text
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -125,3 +125,10 @@ class Metric(Base):
     gini = Column(Float)
     avg_delay_hr = Column(Float)
     neglect_district_days = Column(Float)
+
+
+class Artifact(Base):
+    """Precomputed JSON for the dashboard (graph + GAT embeddings, model analytics)."""
+    __tablename__ = "artifacts"
+    key = Column(String, primary_key=True)
+    data = Column(JSON)

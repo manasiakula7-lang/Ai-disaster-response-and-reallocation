@@ -37,3 +37,31 @@ export const ROAD_STYLE = {
   blocked: { color: "#d03b3b", dashArray: "2 6", label: "Blocked" },
 };
 
+
+export const RESOURCE_UNIT = { food_kits: "kits", water_litres: "litres", medicine_kits: "kits", rescue_teams: "teams" };
+export const RESOURCE_SHORT = { food_kits: "Food", water_litres: "Water", medicine_kits: "Medicine", rescue_teams: "Rescue" };
+
+// Severity classes from the GAT (Step 2): high >= 0.5, medium >= 0.3, else low.
+export const CLASS_LABEL = { high: "High", medium: "Moderate", low: "Low" };
+export const CLASS_COLOR = { high: "#f0566b", medium: "#f5a33b", low: "#22c3a0" };
+
+export const STRATEGIES = [
+  ["mappo", "AI agents (MAPPO + fairness)"],
+  ["lp_rationed", "Optimiser + rationing"],
+  ["lp_fair", "Optimiser, fairness-aware"],
+  ["lp", "Optimiser, max coverage"],
+  ["greedy", "Greedy by severity"],
+  ["local_first", "Local-first (nearest centre)"],
+];
+
+export const CATEGORY_LABEL = {
+  requests_or_urgent_needs: "Urgent request",
+  rescue_volunteering_or_donation_effort: "Rescue / donation",
+  infrastructure_and_utility_damage: "Infrastructure damage",
+  injured_or_dead_people: "Injured or dead",
+  displaced_people_and_evacuations: "Displaced / evacuation",
+  caution_and_advice: "Caution and advice",
+  other_relevant_information: "Other relevant info",
+  sympathy_and_support: "Sympathy and support",
+  not_humanitarian: "Not humanitarian",
+};

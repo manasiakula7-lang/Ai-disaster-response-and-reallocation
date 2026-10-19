@@ -37,6 +37,7 @@ To use a different database, set `DATABASE_URL`, e.g. `postgresql+psycopg://user
 | `events` | 524 | Step 6 event log: reports, road changes, dispatches, alerts | – |
 | `allocations` | 14,053+ | Step 6 shipments, plus every shipment from API simulations | – |
 | `metrics` | 50 | results tables from Steps 3-6 | – |
+| `artifacts` | 2 | `graph` (GAT embeddings and attention per day, from `python -m ml.gnn.export_embeddings`) and `analytics` (NLP, GAT, MARL and FL summaries for the dashboard) | – |
 
 ## Endpoints (`app/main.py`)
 
@@ -58,7 +59,14 @@ To use a different database, set `DATABASE_URL`, e.g. `postgresql+psycopg://user
 | `POST /simulate/{id}/close_road` | `{"edge_id": 4}`: close a road from today on (live what-if) |
 | `GET /simulate/{id}` | Session state: day, remaining stock, metrics so far |
 | `POST /whatif` | Play a whole week with changes and return metrics compared with the unchanged week |
+| `GET /graph?day=3` | District graph for the GAT Network page: nodes with severity, 16-feature GAT embedding and centres; edges with road status and learned attention |
+| `GET /analytics` | Summaries for the Model Analytics page (NLP scores and counts, GAT error table, MAPPO learning curves, FL rounds) |
+| `GET /decisions?day=3` | Crisis reports the reallocation loop acted on that day, most urgent first |
+| `GET /decision/{tweet_id}` | Trace one report: district need vs plan, shipments at the next dispatch wave (with route time), coverage under every strategy, alerts |
+| `POST /evaluate` | `{"policy": "mappo", "baseline": "lp_rationed", "closed_edges": [], "stock_factor": 1, "demand_factor": 1}`: play the week with both strategies; per-resource, per-district and daily results plus an event timeline |
 
 Sessions are kept in memory (enough for a demo; they're lost when the server restarts).
+
+**Tests:** `python -m pytest backend/tests -q` (15 tests).
 
 **Checked:** the API's simulation reproduces the Step 3 result exactly (LP max coverage, 67.8%). It's one of the tests.

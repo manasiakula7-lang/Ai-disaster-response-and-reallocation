@@ -1,6 +1,6 @@
 # Step 8: dashboard (React + Leaflet + Recharts)
 
-A decision-support dashboard for the Kerala 2018 flood scenario. It reads everything from the Step 7 backend.
+RESPONDA, a decision-support dashboard for the Kerala 2018 flood scenario. It reads everything from the Step 7 backend.
 
 ![Overview](../docs/screenshots/1-overview.png)
 
@@ -16,39 +16,32 @@ npm run dev          # http://localhost:5173
 
 The backend address defaults to `http://localhost:8000`. To change it, copy `.env.example` to `.env` and edit `VITE_API_URL`.
 
-## What's on it
+## Pages
 
-**Map (Leaflet):**
-- Districts from the official boundary shapefile, coloured by **GAT severity** (Step 2) or by **share of need met**.
-- Relief centres, sized by number of vehicles.
-- Roads, with that day's status (open / slowed / blocked; colour plus line style).
-- The 25 biggest shipments of the day (centre → district, width = truckloads).
-- Hover over anything for details. The timeline under the map (with a ▶ play button) switches the whole dashboard between 18 and 24 Aug 2018.
+Navy sidebar layout with six pages. The day picker at the top right switches the whole dashboard between 18 and 24 Aug 2018. A full walk-through is in `docs/dashboard-guide.md`.
 
-**Layout:** dark control-room theme by default (Light/Dark switch on the left rail), navigation rail, section panel, map with floating controls, and a "Today at a glance" column (headline numbers, most affected districts, latest alerts). A help guide opens on the first visit.
-
-**Side panel tabs:**
-
-| Tab | Shows |
+| Page | Shows |
 |---|---|
-| Overview | People displaced, districts at high severity and alerts for the day; severity by district; share of each resource covered by the day's plan |
-| Alerts & events | The Step 6 event log for the day: real tweets, road changes, the 4 dispatch waves and alerts, filterable |
-| Results | Strategy comparison (Steps 3-4), value of replanning (Step 6), federated vs centralised (Step 5); switch between demand met, worst-off district and Gini |
-| Simulate | Play the week day by day with any strategy, close a road mid-week, and watch demand met and the worst-off district change (map follows the simulation) |
-| What-if | Change stock, demand or close roads, replay the week and compare with the normal week |
+| Overview | Kerala Command Centre: districts, centres, reports and blocked roads today; flood priority map (High / Moderate / Low); live incident feed of real tweets |
+| GIS Intelligence | Large map with layer toggles (centres, roads, shipments), colour by priority, severity or need met, day-by-day playback, district status table |
+| GAT Network | The district graph the GAT uses: nodes sized by priority, link width = learned attention, blocked roads, relief centres; click a district for its details and 16-feature GAT embedding |
+| Decision Support | Pick a real crisis tweet and follow it: what the NLP understood, the district's need vs plan, which centres shipped what at the next wave, coverage under each strategy, and a six-step explanation |
+| Resource Allocation | Run a scenario (official week, stock shortage, demand surge, roads cut, worst case) with any strategy against a baseline: demand met, worst-off district, per-resource and per-district results, daily chart, event timeline |
+| Model Analytics | NLP report analytics and F1 by category, GAT forecast error and attention, MAPPO training curves, strategy comparison, federated learning |
 
-Works in light and dark mode and on phones (map on top, panel below).
+Works on phones too (sidebar becomes a top bar).
 
 ## Screenshots
 
-`docs/screenshots/`: help guide, overview, alerts, results, simulation, what-if, light mode, laptop width, mobile. The screenshots were taken without the OpenStreetMap base map, which isn't reachable from the build machine; on a normal internet connection the base map shows under the districts.
+`docs/screenshots/`: one per page plus the decision explanation, district-level allocation and mobile. They were taken without the map tiles, which aren't reachable from the build machine; on a normal internet connection the base map shows under the districts.
 
 ## Files
 
 ```
 src/api.js            backend calls
-src/constants.js      days, resources, colour ramps, road styles
-src/theme.js          colour tokens for charts, light/dark
-src/App.jsx           layout, data loading, day + layer controls
-src/components/       MapView, OverviewPanel, AlertsPanel, ComparePanel, SimulatePanel, WhatIfPanel
+src/constants.js      days, resources, labels, colours, strategies
+src/theme.js          chart colour helpers
+src/App.jsx           sidebar, page routing (#page), shared day data
+src/components/       MapView, ComparePanel, ui (cards, stats, meters), icons
+src/pages/            Overview, Gis, Network, Decision, Allocation, Analytics
 ```

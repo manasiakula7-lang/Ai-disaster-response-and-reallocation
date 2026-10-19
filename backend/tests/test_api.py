@@ -86,3 +86,25 @@ def test_whatif_less_stock_hurts():
     r = client.post("/whatif", json={"policy": "mappo", "stock_factor": 0.5}).json()
     assert r["change"]["fulfilment"] < -0.1
     assert client.post("/whatif", json={"policy": "nope"}).status_code == 422
+
+
+def test_graph_and_analytics():
+    g = client.get("/graph", params={"day": 3}).json()
+    assert len(g["nodes"]) == 14 and len(g["edges"]) == 21 and len(g["centres"]) == 19
+    assert all(len(n["embedding"]) == 16 for n in g["nodes"])
+    a = client.get("/analytics").json()
+    assert {"nlp", "gnn", "marl", "fl"} <= set(a)
+
+
+def test_decision_trace():
+    reports = client.get("/decisions", params={"day": 3}).json()
+    assert reports
+    d = client.get(f"/decision/{reports[0]['tweet_id']}").json()
+    assert d["report"]["district"] and d["wave"]
+    assert all(s["amount"] > 0 and s["centre"] for s in d["shipments"])
+
+
+def test_evaluate_closing_roads_hurts():
+    base = client.post("/evaluate", json={}).json()
+    cut = client.post("/evaluate", json={"closed_edges": [0, 6], "stock_factor": 0.6}).json()
+    assert cut["results"]["mappo"]["metrics"]["fulfilment"] < base["results"]["mappo"]["metrics"]["fulfilment"]

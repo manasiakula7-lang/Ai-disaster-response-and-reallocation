@@ -95,7 +95,7 @@ Each step ends in something runnable and demo-able, so the project is presentabl
 - React + Leaflet: district choropleth by severity, centre markers, allocation routes, blocked roads.
 - Recharts: fulfilment per resource, alerts, Gini over time, model metrics.
 - What-if panel: close a road / add a centre / change stock and rerun.
-- **Done (2026-10-19):** `frontend/`. Vite + React 18, react-leaflet map (severity/coverage choropleth, centres, road status, shipment flows), Recharts panels (overview, event log, results, live simulation with road closures, what-if), light/dark and mobile layouts. Screenshots in `docs/screenshots/`. (Adding a new centre in what-if is not implemented.)
+- **Done (2026-10-19):** `frontend/`. Vite + React 18, react-leaflet map (severity/coverage choropleth, centres, road status, shipment flows), Recharts panels (overview, event log, results, live simulation with road closures, what-if), light/dark and mobile layouts. Screenshots in `docs/screenshots/`. **Rebuilt 2026-10-19** as RESPONDA: six pages (Overview, GIS Intelligence, GAT Network, Decision Support, Resource Allocation, Model Analytics); new endpoints `/graph`, `/analytics`, `/decisions`, `/decision/{id}`, `/evaluate`; guide in `docs/dashboard-guide.md`. (Adding a new centre in what-if is not implemented.)
 
 ### Step 9: Evaluation, write-up, demo
 - One results table: greedy vs OR-Tools vs MARL vs MARL+fairness vs federated; fulfilment, delay, Gini, vulnerable-area coverage.

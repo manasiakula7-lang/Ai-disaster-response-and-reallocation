@@ -26,4 +26,9 @@ export const api = {
   closeRoad: (id, edge_id) =>
     request(`/simulate/${id}/close_road`, { method: "POST", body: JSON.stringify({ edge_id }) }),
   whatIf: (body) => request("/whatif", { method: "POST", body: JSON.stringify(body) }),
+  graph: (day) => request(`/graph?${qs({ day })}`),
+  analytics: () => request("/analytics"),
+  decisions: (day) => request(`/decisions?${qs({ day })}`),
+  decision: (id) => request(`/decision/${id}`),
+  evaluate: (body) => request("/evaluate", { method: "POST", body: JSON.stringify(body) }),
 };

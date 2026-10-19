@@ -1,33 +1,31 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, API } from "./api.js";
-import { RESOURCES, TRUCKLOAD, dayLabel } from "./constants.js";
-import { useTheme } from "./theme.js";
-import MapView from "./components/MapView.jsx";
-import OverviewPanel from "./components/OverviewPanel.jsx";
-import AlertsPanel from "./components/AlertsPanel.jsx";
-import ComparePanel from "./components/ComparePanel.jsx";
-import SimulatePanel from "./components/SimulatePanel.jsx";
-import WhatIfPanel from "./components/WhatIfPanel.jsx";
-import KpiColumn, { dayKpis } from "./components/KpiColumn.jsx";
-import Timeline from "./components/Timeline.jsx";
-import HelpOverlay from "./components/HelpOverlay.jsx";
+import { RESOURCES, TRUCKLOAD } from "./constants.js";
 import Icon from "./components/icons.jsx";
+import OverviewPage from "./pages/OverviewPage.jsx";
+import GisPage from "./pages/GisPage.jsx";
+import NetworkPage from "./pages/NetworkPage.jsx";
+import DecisionPage from "./pages/DecisionPage.jsx";
+import AllocationPage from "./pages/AllocationPage.jsx";
+import AnalyticsPage from "./pages/AnalyticsPage.jsx";
 
-const TABS = [
-  { key: "overview", label: "Overview", icon: "overview", title: "Situation overview",
-    blurb: "How bad the flood is in each district today, and how much of the need today's plan covers." },
-  { key: "alerts", label: "Alerts", icon: "alerts", title: "Alerts & events",
-    blurb: "Everything that happened today, in time order: tweets from the public, road changes, dispatches and alerts." },
-  { key: "compare", label: "Results", icon: "results", title: "How the strategies compare",
-    blurb: "Every allocation strategy tested on 50 flood weeks it had never seen." },
-  { key: "simulate", label: "Simulate", icon: "simulate", title: "Run the week live",
-    blurb: "Pick a strategy and play the flood week day by day. You can close a road halfway through." },
-  { key: "whatif", label: "What-if", icon: "whatif", title: "What if…?",
-    blurb: "Change the supplies, the size of the disaster or the roads, and see what gets better or worse." },
+const PAGES = [
+  { key: "overview", label: "Overview", icon: "overview" },
+  { key: "gis", label: "GIS Intelligence", icon: "map" },
+  { key: "network", label: "GAT Network", icon: "network" },
+  { key: "decision", label: "Decision Support", icon: "shield" },
+  { key: "allocation", label: "Resource Allocation", icon: "layers" },
+  { key: "analytics", label: "Model Analytics", icon: "chart" },
 ];
 
+// "#decision?tweet=123" -> { page: "decision", params: { tweet: "123" } }
+function readHash() {
+  const [page, query] = window.location.hash.replace(/^#/, "").split("?");
+  return { page: PAGES.some((p) => p.key === page) ? page : "overview", params: Object.fromEntries(new URLSearchParams(query || "")) };
+}
+
 // Planned shipments -> flows (centre -> district, truckloads) and totals per resource / district.
-function summarisePlan(shipments, districts, centres) {
+export function summarisePlan(shipments, districts, centres) {
   if (!shipments || !districts || !centres) return null;
   const hq = Object.fromEntries(districts.features.map((f) => [f.properties.name, [f.properties.hq_lat, f.properties.hq_lon]]));
   const cpos = Object.fromEntries(centres.features.map((f) => [f.properties.centre_id, [f.geometry.coordinates[1], f.geometry.coordinates[0]]]));
@@ -53,102 +51,70 @@ function summarisePlan(shipments, districts, centres) {
 }
 
 export default function App() {
-  const [theme, setTheme] = useTheme();
+  const [route, setRoute] = useState(readHash);
   const [day, setDay] = useState(3);
-  const [playing, setPlaying] = useState(false);
-  const [tab, setTab] = useState("overview");
-  const [layers, setLayers] = useState({ basemap: true, roads: true, centres: true, flows: true });
-  const [colorMode, setColorMode] = useState("severity");
-  const [districts, setDistricts] = useState(null);
-  const [roads, setRoads] = useState(null);
   const [centres, setCentres] = useState(null);
-  const [events, setEvents] = useState(null);
-  const [alloc, setAlloc] = useState(null);
-  const [metrics, setMetrics] = useState(null);
-  const [sim, setSim] = useState(null);
+  const [dayData, setDayData] = useState({});
   const [error, setError] = useState(null);
-  const [help, setHelp] = useState(() => {
-    try { return !localStorage.getItem("seenHelp"); } catch { return false; }
-  });
-
-  const simDay = sim?.days?.length ? sim.days[sim.days.length - 1] : null;
-  const useSim = tab === "simulate" && !!simDay;
-  const shownDay = useSim ? simDay.day : day;
 
   useEffect(() => {
-    api.centres().then(setCentres).catch((e) => setError(String(e)));
-    api.metrics().then(setMetrics).catch(() => {});
+    const f = () => { setRoute(readHash()); document.querySelector(".main")?.scrollTo(0, 0); };
+    window.addEventListener("hashchange", f);
+    return () => window.removeEventListener("hashchange", f);
   }, []);
+  useEffect(() => { api.centres().then(setCentres).catch((e) => setError(String(e))); }, []);
   useEffect(() => {
-    Promise.all([api.districts(shownDay), api.roads(shownDay), api.events(shownDay), api.allocations(shownDay)])
-      .then(([d, r, e, a]) => { setDistricts(d); setRoads(r); setEvents(e); setAlloc(a); setError(null); })
+    Promise.all([api.districts(day), api.roads(day), api.events(day), api.allocations(day), api.decisions(day)])
+      .then(([districts, roads, events, alloc, reports]) => { setDayData({ districts, roads, events, alloc, reports }); setError(null); })
       .catch((e) => setError(String(e)));
-  }, [shownDay]);
-  useEffect(() => { if (tab === "simulate") setPlaying(false); }, [tab]);
+  }, [day]);
 
-  const plan = useMemo(
-    () => summarisePlan(useSim ? simDay.shipments : alloc, districts, centres),
-    [useSim, simDay, alloc, districts, centres],
-  );
-  const kpis = useMemo(() => dayKpis(districts, events, plan), [districts, events, plan]);
-  const current = TABS.find((t) => t.key === tab);
-  const closeHelp = () => { setHelp(false); try { localStorage.setItem("seenHelp", "1"); } catch { /* ignore */ } };
+  const plan = useMemo(() => summarisePlan(dayData.alloc, dayData.districts, centres), [dayData, centres]);
+  const go = (page, params) => { window.location.hash = params ? `${page}?${new URLSearchParams(params)}` : page; };
+  const shared = { day, setDay, centres, ...dayData, plan, go, params: route.params };
 
   return (
-    <div className="app">
-      <nav className="rail" aria-label="Sections">
-        <div className="brand" title="Kerala Flood Relief"><Icon name="logo" size={22} /></div>
-        {TABS.map((t) => (
-          <button key={t.key} className={`rail-btn ${tab === t.key ? "on" : ""}`} onClick={() => setTab(t.key)}
-            aria-current={tab === t.key ? "page" : undefined}>
-            <Icon name={t.icon} size={20} />
-            <span>{t.label}</span>
-          </button>
-        ))}
-        <div className="rail-spacer" />
-        <button className="rail-btn small" onClick={() => setHelp(true)} title="How to use this dashboard">
-          <Icon name="help" size={20} /><span>Help</span>
-        </button>
-        <button className="rail-btn small" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
-          <Icon name={theme === "dark" ? "sun" : "moon"} size={20} /><span>{theme === "dark" ? "Light" : "Dark"}</span>
-        </button>
-      </nav>
-
-      <section className="panel" aria-label={current.title}>
-        <header className="panel-head">
-          <h2>{current.title}</h2>
-          <p>{current.blurb}</p>
-        </header>
-        <div className="panel-body">
-          {error && (
-            <div className="error-box">
-              <b>Can't reach the backend.</b> Start it with <code>uvicorn backend.app.main:app --reload</code> and
-              refresh this page. <span className="note">({API}: {error})</span>
-            </div>
-          )}
-          {tab === "overview" && <OverviewPanel districts={districts} planned={plan} kpis={kpis} />}
-          {tab === "alerts" && <AlertsPanel events={events} />}
-          {tab === "compare" && <ComparePanel metrics={metrics} />}
-          {tab === "simulate" && <SimulatePanel roads={roads} sim={sim} setSim={setSim} />}
-          {tab === "whatif" && <WhatIfPanel roads={roads} />}
+    <div className="shell">
+      <aside className="side">
+        <div className="brand">
+          <span className="brand-mark"><Icon name="logo" size={24} /></span>
+          <div>
+            <div className="brand-name">RESPONDA.</div>
+            <div className="brand-sub">DISASTER INTELLIGENCE</div>
+          </div>
         </div>
-      </section>
+        <div className="side-label">WORKSPACE</div>
+        <nav className="nav" aria-label="Pages">
+          {PAGES.map((p) => (
+            <a key={p.key} href={`#${p.key}`} className={route.page === p.key ? "on" : ""}
+              aria-current={route.page === p.key ? "page" : undefined}>
+              <Icon name={p.icon} size={20} />{p.label}
+            </a>
+          ))}
+        </nav>
+        <div className="side-spacer" />
+        <div className="side-foot">
+          <span className="pin"><Icon name="pin" size={18} /></span>
+          <div><b>Kerala, India</b><span>2018 floods · 14 districts</span></div>
+        </div>
+      </aside>
 
-      <main className="stage">
-        <MapView districts={districts} centres={centres} roads={roads} flows={plan?.flows}
-          coverage={plan?.coverage} colorMode={colorMode} setColorMode={setColorMode}
-          layers={layers} setLayers={setLayers} theme={theme}
-          title={useSim ? `Simulation · ${dayLabel(shownDay)}` : dayLabel(shownDay)}
-          dayKey={`${shownDay}-${useSim ? sim.days.length : "s6"}`} />
-        <Timeline day={day} setDay={setDay} playing={playing} setPlaying={setPlaying}
-          locked={tab === "simulate" && !!sim}
-          lockedLabel={simDay ? `Simulation running · showing Day ${simDay.day}` : "Simulation started · press Play day 1"} />
+      <main className="main">
+        {error && (
+          <div className="page" style={{ paddingBottom: 0 }}>
+            <div className="error-box">
+              <b>Can't reach the backend.</b> Start it with <code>uvicorn backend.app.main:app --reload</code>, then
+              refresh this page. <span className="muted">({API}: {error})</span>
+            </div>
+          </div>
+        )}
+        {route.page === "overview" && <OverviewPage {...shared} />}
+        {route.page === "gis" && <GisPage {...shared} />}
+        {route.page === "network" && <NetworkPage {...shared} />}
+        {route.page === "decision" && <DecisionPage {...shared} />}
+        {route.page === "allocation" && <AllocationPage {...shared} />}
+        {route.page === "analytics" && <AnalyticsPage {...shared} />}
       </main>
-
-      <KpiColumn k={kpis} events={events} onOpenAlerts={() => setTab("alerts")} />
-
-      {help && <HelpOverlay onClose={closeHelp} />}
     </div>
   );
 }
