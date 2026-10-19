@@ -2,10 +2,14 @@
 export const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 async function request(path, options = {}) {
-  const res = await fetch(`${API}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
+  let res;
+  try {
+    res = await fetch(`${API}${path}`, { headers: { "Content-Type": "application/json" }, ...options });
+  } catch {
+    // The browser hides the reason: either the backend isn't running or it crashed on this request.
+    throw new Error(`Couldn't get ${path.split("?")[0]} from the backend. Check the uvicorn terminal for an error, ` +
+      "and run python -m backend.app.load if you updated the project.");
+  }
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   return res.json();
 }

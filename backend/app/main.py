@@ -11,6 +11,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy import text
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session as DBSession
 
 from backend.app import insights, sim
@@ -233,11 +234,23 @@ def whatif(req: SimRequest):
 
 
 # ------------------------------------------------------------ dashboard pages
+_ARTIFACT_CACHE = {}
+
+
 def _artifact(db, key):
-    a = db.get(Artifact, key)
-    if a is None:
-        raise HTTPException(503, f"'{key}' not loaded; run python -m backend.app.load")
-    return a.data
+    # Normally loaded into the artifacts table by backend.app.load. If the database predates that
+    # table (load not re-run after an update), build the same data from the result files instead.
+    try:
+        a = db.get(Artifact, key)
+        if a is not None:
+            return a.data
+    except ProgrammingError:
+        db.rollback()
+    if not _ARTIFACT_CACHE:
+        _ARTIFACT_CACHE.update(insights.build_artifacts())
+    if key not in _ARTIFACT_CACHE:
+        raise HTTPException(503, f"'{key}' not available; run python -m backend.app.load")
+    return _ARTIFACT_CACHE[key]
 
 
 def _road_changes(db, upto_day):
