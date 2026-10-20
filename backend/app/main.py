@@ -6,6 +6,7 @@ Interactive docs: http://localhost:8000/docs
 """
 import json
 from collections import defaultdict
+from datetime import datetime
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query
@@ -15,15 +16,24 @@ from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session as DBSession
 
-from backend.app import insights, live, sim
-from backend.app.db import get_db
-from backend.app.models import Allocation, Artifact
+from backend.app import insights, live, ops, sim
+from backend.app.db import engine, get_db
+from backend.app.models import OPS_TABLES, Base, Allocation, Artifact, OpsDayReport, OpsLog, OpsOperation
 
 app = FastAPI(title="AI Disaster Response API",
               description="Kerala 2018 floods: districts, relief centres, roads, demand, "
                           "crisis reports, allocations, simulation and what-if analysis.",
               version="0.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+
+@app.on_event("startup")
+def _ops_tables():
+    # The operations desk tables are new: create them if the database was loaded before they existed.
+    try:
+        Base.metadata.create_all(engine, tables=OPS_TABLES)
+    except Exception as e:                       # the rest of the API still works without them
+        print("could not create ops tables:", e)
 
 Day = Query(None, ge=1, le=7, description="Scenario day (1 = 18 Aug 2018)")
 
@@ -502,3 +512,172 @@ def route(district: str, day: int = Query(3, ge=1, le=7), centre: Optional[str] 
             "blocked_today": [f"{r['source']} – {r['target']}" for r in avoided],
             "alternatives": [{"centre_id": o["centre_id"], "name": cs[o["centre_id"]]["properties"]["name"],
                               "hours": o["hours"]} for o in reach[1:4]]}
+
+
+# ---------------------------------------------------------------- operations desk
+class OpsStart(BaseModel):
+    policy: str = Field("mappo", description="mappo | lp_rationed")
+
+
+class OpsSupply(BaseModel):
+    option: str = Field("none", description="|".join(o["key"] for o in ops.SUPPLY_OPTIONS))
+    overrides: dict[str, dict[str, Optional[float]]] = Field(
+        {}, description="per centre, e.g. {'RC01': {'food_kits': 5000, 'vehicles': 4}}")
+
+
+class OpsReport(BaseModel):
+    tweet_id: Optional[str] = Field(None, description="a dataset report from /ops/{id}/dataset")
+    text: Optional[str] = Field(None, min_length=3, max_length=1000, description="or a typed report")
+    district: Optional[str] = None
+
+
+class OpsOutcome(BaseModel):
+    status: str = Field(..., description="success | fail")
+    reason: Optional[str] = None
+    note: Optional[str] = Field(None, max_length=500)
+
+
+def _ops(session_id):
+    if session_id not in ops.OPS:
+        raise HTTPException(404, "unknown operations session; start a new one")
+    return ops.OPS[session_id]
+
+
+def _ops_save(db, s):
+    """Write new log entries, today's operations and closed-day reports to the ops_* tables."""
+    try:
+        now = datetime.utcnow().isoformat(timespec="seconds")
+        saved = getattr(s, "saved_seq", 0)
+        for e in s.since(saved):
+            extra = {k: v for k, v in e.items() if k not in ("seq", "day", "time", "type", "district", "detail")}
+            db.add(OpsLog(session_id=s.id, seq=e["seq"], day=e["day"], time=e["time"], type=e["type"],
+                          district=e["district"], detail=e["detail"], data=extra or None, logged_at=now))
+        for o in s.operations[getattr(s, "saved_ops_from", 0):]:
+            db.merge(OpsOperation(session_id=s.id, op_id=o["op_id"], day=o["day"], wave=o["wave"], district=o["district"],
+                                  centres=o["centres"], items=o["items"], sources=o["sources"], hours=o["hours"],
+                                  status=o["status"], reason=o["reason"], note=o["note"], reported_at=o.get("reported_at")))
+        for r in s.day_reports[len(getattr(s, "saved_days", [])):]:
+            db.merge(OpsDayReport(session_id=s.id, day=r["day"], policy=r["policy"], need_met=r["need_met"],
+                                  worst_need_met=r["worst_need_met"], gini=r["gini"],
+                                  ops_success_rate=r["ops"]["success_rate"], report=r, closed_at=now))
+        db.commit()
+        s.saved_seq = s.seq
+        s.saved_days = list(s.day_reports)
+        # operations of closed days no longer change
+        s.saved_ops_from = next((i for i, o in enumerate(s.operations) if o["day"] == s.day), len(s.operations))
+    except Exception as e:                         # logging must never break the operator's session
+        db.rollback()
+        print("ops log not saved:", e)
+
+
+def _ops_call(s, db, f):
+    try:
+        out = f()
+    except KeyError as e:
+        raise HTTPException(404, str(e).strip("'\""))
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+    except RuntimeError as e:
+        raise HTTPException(503, str(e))
+    _ops_save(db, s)
+    return {"result": out, "state": s.state()}
+
+
+@app.post("/ops", summary="Start an operations-desk session (the week run by hand, day by day)")
+def ops_start(req: OpsStart, db: DBSession = Depends(get_db)):
+    if req.policy not in ops.POLICIES:
+        raise HTTPException(422, f"policy must be one of {list(ops.POLICIES)}")
+    s = ops.OpsSession(req.policy)
+    ops.OPS[s.id] = s
+    while len(ops.OPS) > 20:
+        ops.OPS.pop(next(iter(ops.OPS)))
+    _ops_save(db, s)
+    return {"state": s.state()}
+
+
+@app.get("/ops/history", summary="Closed days from every operations session, from the database")
+def ops_history(limit: int = Query(50, ge=1, le=500), db: DBSession = Depends(get_db)):
+    return q(db, """SELECT session_id, day, policy, need_met, worst_need_met, gini, ops_success_rate, closed_at
+                    FROM ops_day_reports ORDER BY closed_at DESC, day DESC LIMIT :n""", n=limit)
+
+
+@app.get("/ops/{session_id}", summary="Operations-desk state")
+def ops_state(session_id: str):
+    return {"state": _ops(session_id).state()}
+
+
+@app.get("/ops/{session_id}/supply", summary="Today's supply options, with every centre's stock under each")
+def ops_supply_options(session_id: str):
+    return _ops(session_id).supply_options()
+
+
+@app.post("/ops/{session_id}/supply", summary="Choose today's supply (before the first wave)")
+def ops_supply(session_id: str, req: OpsSupply, db: DBSession = Depends(get_db)):
+    s = _ops(session_id)
+    return _ops_call(s, db, lambda: s.set_supply(req.option, req.overrides))
+
+
+@app.get("/ops/{session_id}/dataset", summary="Today's crisis reports from the dataset that can be added")
+def ops_dataset(session_id: str, district: Optional[str] = None, search: Optional[str] = None):
+    s = _ops(session_id)
+    rows = ops.reports_for(s.day)
+    if district:
+        rows = [x for x in rows if x["district"] == district]
+    if search:
+        rows = [x for x in rows if search.lower() in x["text"].lower()]
+    return [x | {"added": x["tweet_id"] in s.used_reports} for x in rows]
+
+
+@app.post("/ops/{session_id}/report", summary="Add a dataset report (tweet_id) or a typed report; the next wave is re-planned")
+def ops_report(session_id: str, req: OpsReport, db: DBSession = Depends(get_db)):
+    s = _ops(session_id)
+    if not req.tweet_id and not req.text:
+        raise HTTPException(422, "give a tweet_id or a text")
+    if req.district and req.district not in s.env.districts:
+        raise HTTPException(422, f"unknown district {req.district}")
+    return _ops_call(s, db, lambda: s.add_report(req.tweet_id, req.text, req.district))
+
+
+@app.post("/ops/{session_id}/dispatch", summary="Send the next wave: one operation per centre-to-district trip")
+def ops_dispatch(session_id: str, db: DBSession = Depends(get_db)):
+    s = _ops(session_id)
+    return _ops_call(s, db, s.dispatch)
+
+
+@app.post("/ops/{session_id}/operations/{op_id}", summary="A rescue team's report for one operation: success or fail")
+def ops_outcome(session_id: str, op_id: str, req: OpsOutcome, db: DBSession = Depends(get_db)):
+    s = _ops(session_id)
+    return _ops_call(s, db, lambda: s.outcome(op_id, req.status, req.reason, req.note))
+
+
+@app.post("/ops/{session_id}/simulate_outcomes",
+          summary="Fill in the missing team reports: at random (likelier to fail on slowed roads), or all successful")
+def ops_simulate(session_id: str, all_success: bool = False, db: DBSession = Depends(get_db)):
+    s = _ops(session_id)
+    return _ops_call(s, db, lambda: s.simulate_outcomes(all_success))
+
+
+@app.post("/ops/{session_id}/close_day", summary="Close the day and get its report; force=true counts missing reports as failed")
+def ops_close(session_id: str, force: bool = False, db: DBSession = Depends(get_db)):
+    s = _ops(session_id)
+    return _ops_call(s, db, lambda: s.close_day(force))
+
+
+@app.get("/ops/{session_id}/log.csv", summary="The session's operations log as CSV (from the database)")
+def ops_log_csv(session_id: str, db: DBSession = Depends(get_db)):
+    import csv as _csv
+    import io
+    from fastapi.responses import Response
+    rows = q(db, """SELECT day, op_id, wave, district, centres, items, hours, status, reason, note, reported_at
+                    FROM ops_operations WHERE session_id = :s ORDER BY day, op_id""", s=session_id)
+    buf = io.StringIO()
+    w = _csv.writer(buf)
+    w.writerow(["day", "operation", "wave", "district", "centres", "food_kits", "water_litres", "medicine_kits",
+                "rescue_teams", "hours", "status", "reason", "note", "reported_at"])
+    for r in rows:
+        it = r["items"] or {}
+        w.writerow([r["day"], r["op_id"], r["wave"], r["district"], " ".join(r["centres"] or [])] +
+                   [it.get(k, 0) for k in ("food_kits", "water_litres", "medicine_kits", "rescue_teams")] +
+                   [r["hours"], r["status"], r["reason"] or "", r["note"] or "", r["reported_at"] or ""])
+    return Response(buf.getvalue(), media_type="text/csv",
+                    headers={"Content-Disposition": f"attachment; filename=operations-{session_id}.csv"})

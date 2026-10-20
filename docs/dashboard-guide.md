@@ -2,7 +2,7 @@
 
 RESPONDA shows the August 2018 Kerala flood week (Day 1 = 18 Aug to Day 7 = 24 Aug) as a relief coordinator would see it, using the results of Steps 1-6 served by the backend (FastAPI + PostGIS).
 
-**Layout.** The sidebar on the left has the eight pages. Each page has a big title at the top and, on the right, the **day picker**: changing the day updates every page that shows "today". On a phone the sidebar becomes a scrollable bar at the top.
+**Layout.** The sidebar on the left has the nine pages. Each page has a big title at the top and, on the right, the **day picker**: changing the day updates every page that shows "today". On a phone the sidebar becomes a scrollable bar at the top.
 
 **Colour themes.** Under **THEME** at the bottom of the sidebar you can switch between four colour schemes: **Navy** (default), **Ocean** (dark teal), **Graphite** (charcoal with violet) and **Daylight** (light, good for projectors and printing). The browser remembers your choice. Switching theme resets the page you are on, so pick it before starting a simulation.
 
@@ -91,6 +91,24 @@ The allocation simulator: plays the whole flood week with two strategies on the 
 ![District-level allocation](screenshots/5b-allocation-districts.png)
 
 ![Custom what-if](screenshots/5c-custom-whatif.png)
+
+## 5a. Operations Desk (run the week by hand)
+
+![Supply and reports](screenshots/10-ops-supply-reports.png)
+
+The flood week run one day at a time, where nothing happens until you do it. The same allocation models are used as everywhere else (AI agents with the fairness reward, or the optimiser with rationing), with the same stock, trucks, roads and true need.
+
+1. **Today's supply.** Pick one of the simulated options for the 19 relief centres: *No new supply* (what is left from yesterday; on day 1 the simulated starting stock), *Small*, *Standard* or *Large convoy* (each centre receives 10%, 25% or 50% of its starting stock), or *Warehouses flooded* (30% of what the centres hold is spoiled). **Edit centre numbers** lets you change any centre's food, water, medicine, rescue teams and vehicles before confirming. The supply can be changed until the first wave leaves.
+2. **Add disaster reports.** The list shows that day's crisis tweets from the dataset (the 449 located, actionable HumAID tweets of the flood week), filterable by district or word. **Add** one and the planner's estimate of that district's need moves halfway toward the true need (the Step 6 rule, so it can go up or down). You can also type a new report: the Step 1 model reads it and the people it mentions become new need, with nearby centres releasing extra stock. Without reports the planner works from the morning forecast.
+3. **Dispatch.** The table previews the next wave (06:00, 12:00, 18:00, 24:00): one convoy per district, the supplies from all contributing centres and when it arrives over today's roads. **Send wave** turns it into operations. Each wave is planned with the stock, trucks and estimate at that moment.
+4. **Team reports.** Every operation waits for its rescue team's report: **✓ Success** counts its supplies as delivered; **✗ Fail** (with a reason: road impassable, area flooded, vehicle breakdown, wrong location, supplies damaged, team diverted, other) sends the supplies back to the centres, leaves the need open, and the next wave plans it again. **Mark all waiting as succeeded** and **Simulate team reports** (failures likelier on slowed roads and long trips) fill in many at once.
+5. **Close the day.** The day report: need met (only confirmed deliveries count, against the true need), worst-off district, fairness gap (Gini), operations succeeded, failures by reason, supplies returned, and every district's need met and operations. Missing team reports can be counted as failed. Leftover stock carries over and the next day starts at step 1. **Week so far** adds the days up with the same formulas as Steps 3-6.
+
+Everything (supply choices, reports, operations, team reports, day reports) is saved in the database tables `ops_log`, `ops_operations` and `ops_day_reports`, which a reload keeps. **Download the operations log (CSV)** exports a session's operations.
+
+![Team reports](screenshots/10b-ops-team-reports.png)
+
+![Day report](screenshots/10c-ops-day-report.png)
 
 ## 5b. Live Operations (new reports arriving)
 

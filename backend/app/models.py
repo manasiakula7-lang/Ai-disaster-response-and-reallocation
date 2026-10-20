@@ -132,3 +132,52 @@ class Artifact(Base):
     __tablename__ = "artifacts"
     key = Column(String, primary_key=True)
     data = Column(JSON)
+
+
+# Operations desk logs (backend/app/ops.py). Created on API start-up if missing and kept by the
+# loader, so the operator's history survives a reload of the scenario data.
+class OpsLog(Base):
+    __tablename__ = "ops_log"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(String, index=True)
+    seq = Column(Integer)
+    day = Column(Integer, index=True)
+    time = Column(String)
+    type = Column(String, index=True)
+    district = Column(String)
+    detail = Column(Text)
+    data = Column(JSON)
+    logged_at = Column(String)
+
+
+class OpsOperation(Base):
+    __tablename__ = "ops_operations"
+    session_id = Column(String, primary_key=True)
+    op_id = Column(String, primary_key=True)
+    day = Column(Integer, index=True)
+    wave = Column(String)
+    district = Column(String, index=True)
+    centres = Column(JSON)                     # contributing relief centres
+    items = Column(JSON)                       # totals per resource
+    sources = Column(JSON)                     # per centre: items, hours, route
+    hours = Column(Float)
+    status = Column(String, index=True)        # in_progress / success / fail
+    reason = Column(String)
+    note = Column(Text)
+    reported_at = Column(String)
+
+
+class OpsDayReport(Base):
+    __tablename__ = "ops_day_reports"
+    session_id = Column(String, primary_key=True)
+    day = Column(Integer, primary_key=True)
+    policy = Column(String)
+    need_met = Column(Float)
+    worst_need_met = Column(Float)
+    gini = Column(Float)
+    ops_success_rate = Column(Float)
+    report = Column(JSON)
+    closed_at = Column(String)
+
+
+OPS_TABLES = [OpsLog.__table__, OpsOperation.__table__, OpsDayReport.__table__]

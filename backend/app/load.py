@@ -15,7 +15,7 @@ from sqlalchemy import text
 
 from backend.app.db import SessionLocal, engine
 from backend.app.insights import build_artifacts
-from backend.app.models import (Allocation, Artifact, Base, Centre, Demand, District, Event, Metric, Report,
+from backend.app.models import (OPS_TABLES, Allocation, Artifact, Base, Centre, Demand, District, Event, Metric, Report,
                                 Road, RoadEvent, Severity)
 from ml.env.relief_env import ROOT, SEVERITY_START_DAY
 
@@ -41,7 +41,8 @@ def scenario_day(date):
 def main():
     with engine.begin() as conn:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
-    Base.metadata.drop_all(engine)
+    keep = set(OPS_TABLES)                 # operator logs survive a reload
+    Base.metadata.drop_all(engine, tables=[t for t in Base.metadata.sorted_tables if t not in keep])
     Base.metadata.create_all(engine)
     db = SessionLocal()
 

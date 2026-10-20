@@ -68,6 +68,25 @@ To use a different database, set `DATABASE_URL`, e.g. `postgresql+psycopg://user
 
 Sessions are kept in memory (enough for a demo; they're lost when the server restarts).
 
+### Operations desk (`app/ops.py`)
+
+The week run by hand, one day at a time. All writes are saved to `ops_log`, `ops_operations` and `ops_day_reports` (created at start-up if missing, kept by the loader).
+
+| Endpoint | What it does |
+|---|---|
+| `POST /ops` | Start a session `{"policy": "mappo"}` (or `lp_rationed`) at day 1 |
+| `GET /ops/{id}/supply` | Today's supply options (`none`, `small`, `standard`, `large`, `damaged`) with every centre's stock under each |
+| `POST /ops/{id}/supply` | `{"option": "standard", "overrides": {"RC01": {"food_kits": 5000, "vehicles": 4}}}`; allowed until the first wave |
+| `GET /ops/{id}/dataset?district=&search=` | Today's located, actionable crisis tweets that can be added |
+| `POST /ops/{id}/report` | `{"tweet_id": "..."}` (moves the district's estimate halfway to the true need) or `{"text": "...", "district": null}` (NLP, adds the people mentioned as need); re-plans the next wave |
+| `POST /ops/{id}/dispatch` | Send the next wave (max 4 a day): one operation per district, with the contributing centres, routes and arrival time |
+| `POST /ops/{id}/operations/{op_id}` | A team's report `{"status": "success" \| "fail", "reason": "Road impassable", "note": ""}`; a failure returns the supplies to the centres |
+| `POST /ops/{id}/simulate_outcomes?all_success=false` | Fill in the missing team reports (at random, likelier to fail on slowed roads; or all successful) |
+| `POST /ops/{id}/close_day?force=false` | Day report (need met, worst-off district, Gini, operations, failures by reason, per district); `force=true` counts missing reports as failed |
+| `GET /ops/{id}` | State: phase, plan preview, today's operations, estimates, stock, day reports, week metrics |
+| `GET /ops/history` | Closed days of every session, from the database |
+| `GET /ops/{id}/log.csv` | The session's operations as CSV |
+
 ### Live operations (`app/live.py`)
 
 | Endpoint | What it does |
@@ -80,6 +99,6 @@ Sessions are kept in memory (enough for a demo; they're lost when the server res
 
 A live session is the Step 6 loop (`ml/realloc/loop.py`) run event by event: played to the end without typed reports it reproduces the Step 6 official result exactly (one of the tests).
 
-**Tests:** `python -m pytest backend/tests -q` (18 tests).
+**Tests:** `python -m pytest backend/tests -q` (19 tests).
 
 **Checked:** the API's simulation reproduces the Step 3 result exactly (LP max coverage, 67.8%). It's one of the tests.

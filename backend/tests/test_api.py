@@ -138,3 +138,29 @@ def test_route_avoids_blocked_road():
     assert all(l["status"] != "blocked" for l in r["legs"]) and r["hours"] > r["normal_hours"]
     best = client.get("/route", params={"district": "Alappuzha", "day": 3}).json()
     assert best["centre"]["district"] == "Alappuzha" and best["hours"] == 1.0
+
+
+def test_ops_desk_day():
+    with TestClient(app) as c:                       # runs start-up, which creates the ops tables
+        sid = c.post("/ops", json={"policy": "mappo"}).json()["state"]["session_id"]
+        assert c.post(f"/ops/{sid}/dispatch").status_code == 409          # supply first
+        opts = {o["key"]: o for o in c.get(f"/ops/{sid}/supply").json()}
+        assert opts["large"]["totals"]["food_kits"] > opts["none"]["totals"]["food_kits"] > opts["damaged"]["totals"]["food_kits"]
+        st = c.post(f"/ops/{sid}/supply", json={"option": "standard", "overrides": {"RC01": {"food_kits": 1234}}}).json()["state"]
+        assert st["phase"] == "operate" and st["stock"]["RC01"]["food_kits"] == 1234
+        rep = c.get(f"/ops/{sid}/dataset").json()[0]
+        r = c.post(f"/ops/{sid}/report", json={"tweet_id": rep["tweet_id"]}).json()
+        assert r["result"]["report"]["district"] == rep["district"]
+        assert c.post(f"/ops/{sid}/report", json={"tweet_id": rep["tweet_id"]}).status_code == 409   # only once
+        ops_ = c.post(f"/ops/{sid}/dispatch").json()["result"]["operations"]
+        assert ops_ and len({o["district"] for o in ops_}) == len(ops_)    # one convoy per district
+        before = c.get(f"/ops/{sid}").json()["state"]["stock_left"]["food_kits"]
+        failed = c.post(f"/ops/{sid}/operations/{ops_[0]['op_id']}", json={"status": "fail", "reason": "Road impassable"}).json()
+        assert failed["state"]["stock_left"]["food_kits"] == pytest.approx(before + ops_[0]["items"].get("food_kits", 0), abs=0.5)
+        c.post(f"/ops/{sid}/simulate_outcomes", params={"all_success": True})
+        day = c.post(f"/ops/{sid}/close_day").json()
+        r = day["result"]
+        assert r["ops"]["fail"] == 1 and r["ops"]["success"] == len(ops_) - 1 and 0 < r["need_met"] < 1
+        assert day["state"]["day"] == 2 and day["state"]["phase"] == "supply"
+        assert any(h["session_id"] == sid for h in c.get("/ops/history").json())
+        assert ops_[0]["op_id"] in c.get(f"/ops/{sid}/log.csv").text

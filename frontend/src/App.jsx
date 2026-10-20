@@ -10,6 +10,7 @@ import AllocationPage from "./pages/AllocationPage.jsx";
 import AnalyticsPage from "./pages/AnalyticsPage.jsx";
 import SimulationPage from "./pages/SimulationPage.jsx";
 import LiveOpsPage from "./pages/LiveOpsPage.jsx";
+import OpsDeskPage from "./pages/OpsDeskPage.jsx";
 
 const PAGES = [
   { key: "overview", label: "Overview", icon: "overview" },
@@ -17,6 +18,7 @@ const PAGES = [
   { key: "network", label: "GAT Network", icon: "network" },
   { key: "decision", label: "Decision Support", icon: "shield" },
   { key: "allocation", label: "Resource Allocation", icon: "layers" },
+  { key: "ops", label: "Operations Desk", icon: "truck" },
   { key: "live", label: "Live Operations", icon: "tweet" },
   { key: "simulate", label: "7-Day Simulation", icon: "pulse" },
   { key: "analytics", label: "Model Analytics", icon: "chart" },
@@ -149,6 +151,7 @@ export default function App() {
         {route.page === "analytics" && <AnalyticsPage {...shared} />}
         {route.page === "simulate" && <SimulationPage {...shared} />}
         {route.page === "live" && <LiveOpsPage {...shared} />}
+        {route.page === "ops" && <OpsDeskPage {...shared} />}
       </main>
     </div>
   );
